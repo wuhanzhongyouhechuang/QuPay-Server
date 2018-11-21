@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>接口测试</title>
+    <#include "/header.html">
+</head>
+<body>
+<button onclick="testNginx();">测试</button>
+</body>
+<script>
+    function testNginx() {
+        debugger;
+        $.ajax({
+            url: baseURL + "/api/v1/testNginx",
+            type: 'post',
+            //data: JSON.stringify(dataParam),//一同上传的数据
+            dataType: 'json', //返回值类型一般设置为json
+            contentType: 'application/json;charset=utf-8',
+            success: function (data, status)  //服务器成功响应处理函数
+            {
+                if (data.code == 0) {
+                    alert(data.msg);
+                } else {
+                    alert(data.msg);
+                }
+            }
+        })
+    }
+</script>
+</html>

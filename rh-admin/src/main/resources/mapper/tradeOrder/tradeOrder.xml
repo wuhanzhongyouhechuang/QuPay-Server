@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ntnikka.modules.orderManager.dao.TradeOrderDao">
+
+    <select id="queryOrderDataForBarChart" parameterType="map" resultType="java.util.HashMap">
+        SELECT SUM(order_amount) as total_count , DATE_FORMAT(create_time,'%y-%m-%d') as dt
+        from trade_order
+        where status = 1
+        <choose>
+            <when test="starttime == '' and  endtime == ''">
+                and TO_DAYS(create_time) = TO_DAYS(NOW())
+            </when>
+            <otherwise>
+                and DATE_FORMAT(create_time,'%y-%m-%d')
+                between DATE_FORMAT(#{starttime},'%y-%m-%d') and DATE_FORMAT(#{endtime},'%y-%m-%d')
+            </otherwise>
+        </choose>
+        GROUP BY dt
+    </select>
+
+    <select id="queryOrderDataForBarChartByMerchant" parameterType="map" resultType="java.util.HashMap">
+        SELECT SUM(order_amount) as total_count , DATE_FORMAT(create_time,'%y-%m-%d') as dt
+        from trade_order
+        where status = 1
+        <if test="ids != null and ids.size() > 0 ">
+            and merchant_id in
+            <foreach collection="ids" item="item" index="index" open="(" close=")" separator=",">
+                ${item}
+            </foreach>
+        </if>
+        <choose>
+            <when test="starttime == '' and  endtime == ''">
+                and TO_DAYS(create_time) = TO_DAYS(NOW())
+            </when>
+            <otherwise>
+                and DATE_FORMAT(create_time,'%y-%m-%d')
+                between DATE_FORMAT(#{starttime},'%y-%m-%d') and DATE_FORMAT(#{endtime},'%y-%m-%d')
+            </otherwise>
+        </choose>
+        GROUP BY dt
+    </select>
+
+    <select id="queryTotalOrderCount" resultType="java.util.HashMap">
+        select count(1) as totalCount
+        from trade_order
+        where status = 1
+        <choose>
+            <when test="starttime == '' and  endtime == ''">
+                and TO_DAYS(create_time) = TO_DAYS(NOW())
+            </when>
+            <otherwise>
+                and DATE_FORMAT(create_time,'%y-%m-%d')
+                between DATE_FORMAT(#{starttime},'%y-%m-%d') and DATE_FORMAT(#{endtime},'%y-%m-%d')
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="queryToPayOrderCount" resultType="java.util.HashMap">
+        select count(1) as toPayCount
+        from trade_order
+        where status = 0
+        <choose>
+            <when test="starttime == '' and  endtime == ''">
+                and TO_DAYS(create_time) = TO_DAYS(NOW())
+            </when>
+            <otherwise>
+                and DATE_FORMAT(create_time,'%y-%m-%d')
+                between DATE_FORMAT(#{starttime},'%y-%m-%d') and DATE_FORMAT(#{endtime},'%y-%m-%d')
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="queryFailOrderCount" resultType="java.util.HashMap">
+        select count(1) as failCount
+        from trade_order
+        where status = 2
+        <choose>
+            <when test="starttime == '' and  endtime == ''">
+                and TO_DAYS(create_time) = TO_DAYS(NOW())
+            </when>
+            <otherwise>
+                and DATE_FORMAT(create_time,'%y-%m-%d')
+                between DATE_FORMAT(#{starttime},'%y-%m-%d') and DATE_FORMAT(#{endtime},'%y-%m-%d')
+            </otherwise>
+        </choose>
+    </select>
+
+
+    <select id="queryAllCountAndSum" resultType="java.util.HashMap">
+        select count(1) as totalCount , SUM(order_amount) as totalAmount
+        from trade_order
+        <choose>
+            <when test="starttime == '' and  endtime == ''">
+                where TO_DAYS(create_time) = TO_DAYS(NOW())
+            </when>
+            <otherwise>
+                where DATE_FORMAT(create_time,'%y-%m-%d')
+                between DATE_FORMAT(#{starttime},'%y-%m-%d') and DATE_FORMAT(#{endtime},'%y-%m-%d')
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="querySuccessCountAndSum" resultType="java.util.HashMap">
+        select count(1) as totalCount , SUM(order_amount) as totalAmount
+        from trade_order
+        where status = 1
+        <choose>
+            <when test="starttime == '' and  endtime == ''">
+                and TO_DAYS(create_time) = TO_DAYS(NOW())
+            </when>
+            <otherwise>
+                and DATE_FORMAT(create_time,'%y-%m-%d')
+                between DATE_FORMAT(#{starttime},'%y-%m-%d') and DATE_FORMAT(#{endtime},'%y-%m-%d')
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="queryAllCountAndSumByMerchant" resultType="java.util.HashMap">
+        select count(1) as totalCount , SUM(order_amount) as totalAmount
+        from trade_order
+        <choose>
+            <when test="starttime == '' and  endtime == ''">
+                where TO_DAYS(create_time) = TO_DAYS(NOW())
+            </when>
+            <otherwise>
+                where DATE_FORMAT(create_time,'%y-%m-%d')
+                between DATE_FORMAT(#{starttime},'%y-%m-%d') and DATE_FORMAT(#{endtime},'%y-%m-%d')
+            </otherwise>
+        </choose>
+        <if test="ids != null and ids.size() > 0 ">
+            and merchant_id in
+            <foreach collection="ids" item="item" index="index" open="(" close=")" separator=",">
+                ${item}
+            </foreach>
+        </if>
+    </select>
+
+    <select id="querySuccessCountAndSumByMerchant" resultType="java.util.HashMap">
+        select count(1) as totalCount , SUM(order_amount) as totalAmount
+        from trade_order
+        where status = 1
+        <choose>
+            <when test="starttime == '' and  endtime == ''">
+                and TO_DAYS(create_time) = TO_DAYS(NOW())
+            </when>
+            <otherwise>
+                and DATE_FORMAT(create_time,'%y-%m-%d')
+                between DATE_FORMAT(#{starttime},'%y-%m-%d') and DATE_FORMAT(#{endtime},'%y-%m-%d')
+            </otherwise>
+        </choose>
+        <if test="ids != null and ids.size() > 0 ">
+            and merchant_id in
+            <foreach collection="ids" item="item" index="index" open="(" close=")" separator=",">
+                ${item}
+            </foreach>
+        </if>
+    </select>
+
+    <select id="queryTotalOrderCountByMerchant" resultType="java.util.HashMap">
+        select count(1) as totalCount
+        from trade_order
+        where status = 1
+        <if test="ids != null and ids.size() > 0 ">
+            and merchant_id in
+            <foreach collection="ids" item="item" index="index" open="(" close=")" separator=",">
+                ${item}
+            </foreach>
+        </if>
+        <choose>
+            <when test="starttime == '' and  endtime == ''">
+                and TO_DAYS(create_time) = TO_DAYS(NOW())
+            </when>
+            <otherwise>
+                and DATE_FORMAT(create_time,'%y-%m-%d')
+                between DATE_FORMAT(#{starttime},'%y-%m-%d') and DATE_FORMAT(#{endtime},'%y-%m-%d')
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="queryToPayOrderCountByMerchant" resultType="java.util.HashMap">
+        select count(1) as toPayCount
+        from trade_order
+        where status = 0
+        <if test="ids != null and ids.size() > 0 ">
+            and merchant_id in
+            <foreach collection="ids" item="item" index="index" open="(" close=")" separator=",">
+                ${item}
+            </foreach>
+        </if>
+        <choose>
+            <when test="starttime == '' and  endtime == ''">
+                and TO_DAYS(create_time) = TO_DAYS(NOW())
+            </when>
+            <otherwise>
+                and DATE_FORMAT(create_time,'%y-%m-%d')
+                between DATE_FORMAT(#{starttime},'%y-%m-%d') and DATE_FORMAT(#{endtime},'%y-%m-%d')
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="queryFailOrderCountByMerchant" resultType="java.util.HashMap">
+        select count(1) as failCount
+        from trade_order
+        where status = 2
+        <if test="ids != null and ids.size() > 0 ">
+            and merchant_id in
+            <foreach collection="ids" item="item" index="index" open="(" close=")" separator=",">
+                ${item}
+            </foreach>
+        </if>
+        <choose>
+            <when test="starttime == '' and  endtime == ''">
+                and TO_DAYS(create_time) = TO_DAYS(NOW())
+            </when>
+            <otherwise>
+                and DATE_FORMAT(create_time,'%y-%m-%d')
+                between DATE_FORMAT(#{starttime},'%y-%m-%d') and DATE_FORMAT(#{endtime},'%y-%m-%d')
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="queryList" parameterType="map" resultType="com.ntnikka.modules.orderManager.entity.TradeOrder">
+        SELECT a.id,
+        a.order_id AS orderId,
+        a.pay_type AS payType,
+        a.version,
+        a.sign_type AS signType,
+        a.order_amount AS orderAmount,
+        a.partner,
+        a.sign,
+        a.notify_url AS notifyUrl,
+        a.product_id AS productId,
+        a.product_name AS productName,
+        a.product_desc AS productDesc,
+        a.pay_method AS payMethod,
+        a.create_time AS createTime,
+        a.update_time AS updateTime,
+        a.merchant_id AS merchantId,
+        a.`status`,
+        a.notify_status AS notifyStatus,
+        a.trade_no AS tradeNo,
+        a.pay_time AS payTime,
+        a.sys_trade_no AS sysTradeNo,
+        a.merchant_name AS merchantName
+        FROM trade_order a
+        <choose>
+            <when test="merchantdept != null and merchantdept != ''">
+                inner join merchant_dept b
+                on a.merchant_id = b.merchant_id
+                where b.parent_id = ${merchantdept}
+                and a.status = 1
+            </when>
+            <otherwise>
+                where a.status = 1
+            </otherwise>
+        </choose>
+        <if test="tradeid != null and tradeid != ''">
+            and a.sys_trade_no = #{tradeid}
+        </if>
+        <if test="orderid != null and orderid != ''">
+            and order_id = #{orderid}
+        </if>
+        <if test="merchantid != null and merchantid != ''">
+            and a.merchant_id = #{merchantid}
+        </if>
+        <if test="starttime != null and starttime != ''">
+            and a.create_time &gt;= #{starttime}
+        </if>
+        <if test="endtime != null and endtime != ''">
+            and a.create_time &lt;= #{endtime}
+        </if>
+    </select>
+</mapper>

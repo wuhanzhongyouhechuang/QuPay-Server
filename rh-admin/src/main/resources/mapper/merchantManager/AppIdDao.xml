@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ntnikka.modules.merchantManager.dao.AppIdDao">
+
+    <!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.ntnikka.modules.merchantManager.entity.AppIdEntity" id="appIdMap">
+        <result property="appid" column="appid"/>
+        <result property="aliPubKey" column="ali_pub_key"/>
+        <result property="merchantPubKey" column="merchant_pub_key"/>
+        <result property="merchantPriKey" column="merchant_pri_key"/>
+        <result property="id" column="id"/>
+    </resultMap>
+
+    <select id="queryAppid" resultType="java.lang.Long">
+        select appid
+        from app_id
+    </select>
+    <select id="queryInfoByAppid" resultType="com.ntnikka.modules.merchantManager.entity.AppIdEntity"
+            parameterType="map">
+        select *
+        from app_id
+        where appid = #{appid}
+    </select>
+</mapper>

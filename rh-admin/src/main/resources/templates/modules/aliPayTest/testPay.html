@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <#include "/header.html">
+</head>
+<body onload="ld();">
+<!--<form action="/api/v1/PagePayTest" method="GET">-->
+<!--<button type="submit">提交</button>-->
+<!--</form>-->
+<form class="form-horizontal">
+    <div class="form-group">
+        <div class="col-sm-2 control-label">商户ID</div>
+        <div class="col-sm-10">
+            <input type="text" id="merchantId" value="10009" class="form-control" placeholder="商户ID"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-sm-2 control-label">用户密钥</div>
+        <div class="col-sm-10">
+            <input type="text" id="priKey" value="1DB370DE2D59136F4EC888FA51F600FE" class="form-control"
+                   placeholder="用户密钥"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-sm-2 control-label">商户订单号</div>
+        <div class="col-sm-10">
+            <input type="text" id="orderId" class="form-control" placeholder="商户订单号"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-sm-2 control-label">订单描述</div>
+        <div class="col-sm-10">
+            <input type="text" id="productDesc" value="商品" class="form-control" placeholder="订单描述"/>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-sm-2 control-label">支付金额</div>
+        <div class="col-sm-10">
+            <input type="text" id="totalAmount" class="form-control" value="1" placeholder="支付金额"/>
+            <input type="hidden" id="version" value="1.0" class="form-control"/>
+            <input type="hidden" id="signType" value="MD5" class="form-control"/>
+            <!--<input type="hidden" id="payMethod" value="221" class="form-control"/>-->
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-sm-2 control-label">支付通道</div>
+        <div class="col-sm-10">
+            <!--<input type="hidden" id="payMethod" value="221" class="form-control"/>-->
+            <select class='form-control' id="payMethod">
+                <option value="22" selected>支付宝</option>
+                <option value="221">支付宝免签</option>
+                <option value="32">微信</option>
+                <option value="321">微信免签</option>
+                <option value="421">QQ免签</option>
+            </select>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="col-sm-2 control-label">支付方式</div>
+        <label class="radio-inline">
+            <input type="radio" name="status" value="Wap"/> 手机wap支付
+        </label>
+        <label class="radio-inline">
+            <input type="radio" name="status" value="QrCode" checked/> 二维码支付
+        </label>
+    </div>
+    <div class="form-group">
+        <div class="col-sm-2 control-label"></div>
+        <input type="button" class="btn btn-primary" onclick="submitFrom();" value="确定"/>
+    </div>
+</form>
+<div>
+    <img id="qrCode">
+</div>
+<script>
+    function ld() {
+        console.log(baseURL);
+        var date = new Date();
+        var year = date.getFullYear();
+        var month = date.getMonth() + 1;
+        var day = date.getDate();
+        var hour = date.getHours();
+        var minute = date.getMinutes();
+        var second = date.getSeconds();
+        var Num = "";
+        for (var i = 0; i < 6; i++) {
+            Num += Math.floor(Math.random() * 10);
+        }
+        $("#orderId").val("" + year + month + day + hour + minute + second + Num);
+    }
+</script>
+<script>
+    function submitFrom() {
+        var merchantId = $("#merchantId").val();
+        if (merchantId.trim() == "" || merchantId.trim() == null) {
+            alert("商户ID不能为空!")
+            return false;
+        }
+        var priKey = $("#priKey").val();
+        if (priKey.trim() == "" || priKey.trim() == null) {
+            alert("商户密钥不能为空!")
+            return false;
+        }
+        var orderId = $("#orderId").val();
+        if (orderId.trim() == "" || orderId.trim() == null) {
+            alert("订单流水号不能为空!")
+            return false;
+        }
+        var productDesc = $("#productDesc").val();
+        if (productDesc.trim() == "" || productDesc.trim() == null) {
+            alert("商品描述不能为空!")
+            return false;
+        }
+        var totalAmount = $("#totalAmount").val();
+        if (totalAmount.trim() == "" || totalAmount.trim() == null) {
+            alert("商品金额不能为空!")
+            return false;
+        }
+        var payType = $("input[name='status']:checked").val();
+        var version = $("#version").val();
+        var signType = $("#signType").val();
+        var payMethod = $("#payMethod").val();
+        var MD5Str = "merchantId=" + merchantId + "&orderAmount=" + totalAmount + "&orderId=" + orderId + "&payMethod=" + payMethod + "&payType=" + payType + "&signType=" + signType + "&version=" + version + "&priKey=" + priKey;
+        var sign = hex_md5(MD5Str).toUpperCase();
+        var dataParam = {
+            "orderId": orderId,
+            "orderAmount": totalAmount,
+            "productName": productDesc,
+            "merchantId": merchantId,
+            "payMethod": payMethod,
+            "payType": payType,
+            "signType": signType,
+            "sign": sign,
+            "version": version,
+            "notifyUrl": "http://47.92.241.14/api/v1/notify"
+        };
+        $.ajax({
+            url: baseURL + "/api/v1/create",
+            type: 'post',
+            data: JSON.stringify(dataParam),//一同上传的数据
+            dataType: 'json', //返回值类型一般设置为json
+            contentType: 'application/json;charset=utf-8',
+            success: function (data, status)  //服务器成功响应处理函数
+            {
+                debugger;
+                if (data.code == 0) {
+                    if (payType == "QrCode") {
+                        $("#qrCode").attr('src', data.data.qr_code);
+                    } else {
+                        //window.open(data.data.qr_code, "_blank");
+                        window.location.href = data.data.qr_code;
+                    }
+                } else {
+                    alert(data.msg);
+                }
+            }
+        })
+    }
+</script>
+</body>
+</html>

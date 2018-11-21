@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>表单审批</title>
+    <#include "/header.html">
+</head>
+<body>
+<div id="rrapp" v-cloak>
+    <div v-show="showList" class="panel panel-default"><!--panel panel-default  bootstrap表单框 -->
+        <div class="panel-heading">{{title}}</div>
+        <p style="text-align: center;font-size: 16px;border-bottom: 2px solid #ccc;padding:10px 0px;"><b>&nbsp;&nbsp;第一步：企业基本信息（共三步）</b>
+        </p>
+
+        <form class="form-inline" role="form">
+            <!--1.1申请基本信息-->
+            <p style="font-size: 15px;border-bottom: 1px solid #ccc;padding:10px 0px;">&nbsp;&nbsp;1.1申请基本信息</p>
+            <div class="row" style="border-top:none">
+                <div class="col-xs-6">
+                    <div class="col-sm-3"></div>
+                    <div class="col-sm-9">
+                        <label>业务编号：&nbsp;</label>
+                        <input type="text" style="width:60%" class="form-control" placeholder="282017010002">
+                    </div>
+                </div>
+                <div class="col-xs-6">
+                    <div class="col-sm-12">
+                        <label>企业名称：</label>
+                        <input type="text" style="width:60%" class="form-control" placeholder="琪讯">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row" style="border-top:none">
+                <div class="col-xs-6">
+                    <div class="col-sm-3"></div>
+                    <div class="col-sm-9">
+                        <label>报告年度：</label><span style="color:red">*</span>
+                        <input type="text" style="width:60%" class="form-control" placeholder="2015">
+                    </div>
+                </div>
+                <div class="col-xs-6">
+                    <div class="col-sm-12">
+                        <label>填报日期：</label>
+                        <input type="text" style="width:60%" class="form-control" placeholder="2017-01-03">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row" style="border-top:none">
+                <div class="col-xs-6">
+                    <div class="col-sm-3"></div>
+                    <div class="col-sm-9">
+                        <label>所属地市：</label><span style="color:red">*</span>
+                        <input type="text" style="width:60%" class="form-control" placeholder="01-广州市">
+                    </div>
+                </div>
+                <div class="col-xs-6">
+                    <div class="col-sm-12">
+                        <label>所属地区：</label>
+                        <input type="text" style="width:60%" class="form-control" placeholder="03荔湾区">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row" style="border-top:none">
+                <div class="col-xs-6">
+                    <div class="col-sm-3"></div>
+                    <div class="col-sm-9">
+                        <label>企业所属类别：</label><span style="color:red">*</span>
+                        <select name="city" class="form-control" style="width:55%">
+                            <option value="">请选择一个城市</option>
+                            <option value="010">北京</option>
+                            <option value="021">上海</option>
+                            <option value="0571">杭州</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-xs-6">
+                </div>
+            </div>
+
+            <br/>
+            <!--1.1 END -->
+
+            <!--1.2统计属性代码-->
+            <p style="font-size: 15px;border-bottom: 1px solid #ccc;padding:10px 0px;">&nbsp;&nbsp;1.2统计属性代码</p>
+
+            <div class="row" style="border-top:none">
+                <div class="col-xs-6">
+                    <div class="col-sm-2"></div>
+                    <div class="col-sm-10">
+                        <label>国民经济行业代码：</label><span style="color:red">*</span>
+                        <!--<input type="text" style="width:57%" class="form-control" placeholder="6530信息技术咨询服务">-->
+                        <input type="text" class="form-control" style="cursor:pointer;width:57%;" v-model="gb.name"
+                               @click="gbTree" readonly="readonly" placeholder="6530信息技术咨询服务"/>
+                    </div>
+                </div>
+                <div class="col-xs-6">
+                </div>
+            </div>
+            <br/>
+            <!--1.2 END -->
+        </form>
+
+
+    </div>
+    <!--<div v-show="!showList"></div>-->
+    <!--<div v-show="!showList"></div>-->
+</div>
+
+<!-- 选择国民经济行业代码 -->
+<div id="gbLayer" style="display: none;padding:10px;">
+    <ul id="gbTree" class="ztree"></ul>
+</div>
+
+<script src="${request.contextPath}/statics/js/modules/apply/formsub.js?_${.now?long}"></script>
+</body>
+</html>

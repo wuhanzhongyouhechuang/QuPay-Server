@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>商户销售统计</title>
+    <#include "/header.html">
+</head>
+<body>
+<div id="rrapp" v-cloak>
+    <form class="form-horizontal">
+        <div class="grid-btn">
+            <div class="form-group col-sm-5">
+                <input class="form-control" type="text" id="starttime" style="width:100%" value="" placeholder="开始时间">
+            </div>
+            <div class="form-group col-sm-5">
+                <input class="form-control" type="text" id="endtime" style="width:100%" value="" placeholder="结束时间">
+            </div>
+            <div class="form-group col-sm-5">
+                <input type="text" id="merchantName" class="form-control" style="cursor:pointer;" @click="deptTree"
+                       readonly="readonly" placeholder="所属部门"/>
+                <input type="hidden" id="merchantNum" class="form-control" style="cursor:pointer;" readonly="readonly"/>
+            </div>
+            <a class="btn btn-default" onclick="barQuery();">查询</a>
+        </div>
+    </form>
+    <div>
+        <div>
+            总查询统计:<label>订单提交金额 : <label id="totalAmount"></label> 订单成功金额 : <label id="successAmount"></label></label>
+        </div>
+        <div>
+            <label>订单提交总量 : <label id="totalCount"></label> 订单成功量 : <label id="successCount"></label></label>
+        </div>
+    </div>
+</div>
+<!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+<!-- barChart-->
+<div id="main" style="width: 1000px;height:400px;"></div>
+<!--<div id="main2" style="width: 1000px;height:400px;"></div>-->
+<div id="main3" style="width: 1000px;height:400px;"></div>
+<!-- 选择部门 -->
+<div id="deptLayer" style="display: none;padding:10px;">
+    <ul id="deptTree" class="ztree"></ul>
+</div>
+</body>
+<script src="${request.contextPath}/statics/js/modules/tradeOrderManager/tradeOrderGroupCountForMerchant.js?_${.now?long}"></script>
+<script src="${request.contextPath}/statics/plugins/layDate/laydate/laydate.js"></script>
+<script type="text/javascript">
+    var star = laydate.render({
+        elem: '#starttime',
+        type: 'datetime',
+        format: 'yyyy-MM-dd',
+        change: function (value, date) {
+            console.log(value);
+            end.min = value;
+        },
+        done: function (value, date, endDate) {
+
+            if (date != '') {
+
+                end.config.min = {
+
+                    year: date.year,
+
+                    month: date.month - 1,
+
+                    date: date.date,
+
+                    hours: date.hours,
+
+                    minutes: date.minutes,
+
+                    seconds: date.seconds
+
+                }; //开始日选好后，重置结束日的最小日期
+
+                end.config.max = {
+
+                    year: date.year,
+
+                    month: date.month - 1,
+
+                    date: date.date + 89,
+
+// hours: date.hours,
+
+// minutes: date.minutes,
+
+// seconds: date.seconds
+
+                }; //开始日选好后，重置结束日的最小日期
+
+                end.config.value = {
+
+                    year: date.year,
+
+                    month: date.month - 1,
+
+                    date: date.date,
+
+                    hours: date.hours,
+
+                    minutes: date.minutes,
+
+                    seconds: date.seconds
+
+                }; //将结束日的初始值设定为开始日
+
+            }
+
+            else {
+
+                end.config.min = {
+
+                    year: '',
+
+                    month: '',
+
+                    date: '',
+
+                    hours: '',
+
+                    minutes: '',
+
+                    seconds: ''
+
+                }; //开始日选好后，重置结束日的最小日期
+
+                end.config.btns = ['clear', 'now', 'confirm'];
+
+            }
+
+        }
+    });
+    var end = laydate.render({
+        elem: '#endtime',
+        type: 'datetime',
+        format: 'yyyy-MM-dd',
+        done: function (value, date, endDate) {
+
+            if (date != '') {
+
+// start.config.max = {
+
+// year: date.year,
+
+// month: date.month - 1,
+
+// date: date.date,
+
+// hours: date.hours,
+
+// minutes: date.minutes,
+
+// seconds: date.seconds
+
+// }; //结束日选好后，重置开始日的最大日期
+
+            }
+
+            else {
+
+                start.config.max = {
+
+                    year: '',
+
+                    month: '',
+
+                    date: '',
+
+                    hours: '',
+
+                    minutes: '',
+
+                    seconds: ''
+
+                }; //开始日选好后，重置结束日的最小日期
+
+                start.config.btns = ['clear', 'now', 'confirm'];
+
+            }
+
+        }
+    });
+</script>
+<script>
+    var barQuery = function () {
+        var myChart = echarts.init(document.getElementById('main'));
+        // var myChart2 = echarts.init(document.getElementById('main2'));
+        var myChart3 = echarts.init(document.getElementById('main3'));
+        var merchantNum = $("#merchantNum").val();
+        if (merchantNum == "" || merchantNum.trim().length == 0) {
+            alert("请先选择合作商户");
+            return false;
+        }
+        $.ajax({
+            url: baseURL + "/tradeOrder/merchantCount",
+            type: 'post',
+            data: JSON.stringify({
+                "starttime": $("#starttime").val(),
+                "endtime": $("#endtime").val(),
+                "merchantdept": $("#merchantNum").val()
+            }),//一同上传的数据
+            dataType: 'json', //返回值类型一般设置为json
+            contentType: 'application/json;charset=utf-8',
+            success: function (data, status)  //服务器成功响应处理函数
+            {
+                if (status == "success") {
+                    $("#totalAmount").text(data.totalMap.totalAmount);
+                    $("#totalCount").text(data.totalMap.totalCount);
+                    $("#successAmount").text(data.successMap.totalAmount);
+                    $("#successCount").text(data.successMap.totalCount);
+                    //bar
+                    myChart.setOption({
+                        title: {
+                            text: '销售额'
+                        },
+                        color: '#3fbfc2',
+                        tooltip: {},
+                        legend: {
+                            data: ['销量']
+                        },
+                        xAxis: {
+                            data: data.nameList
+                        },
+                        yAxis: {},
+                        series: [{
+                            name: '销量',
+                            type: 'bar',
+                            data: data.amountList
+                        }]
+                    });
+                    //线性
+                    // myChart2.setOption({
+                    //     title: {
+                    //         text: '折线图堆叠'
+                    //     },
+                    //     tooltip: {
+                    //         trigger: 'axis'
+                    //     },
+                    //     legend: {
+                    //         data:['邮件营销','联盟广告','视频广告','直接访问','搜索引擎']
+                    //     },
+                    //     grid: {
+                    //         left: '3%',
+                    //         right: '4%',
+                    //         bottom: '3%',
+                    //         containLabel: true
+                    //     },
+                    //     toolbox: {
+                    //         feature: {
+                    //             saveAsImage: {}
+                    //         }
+                    //     },
+                    //     xAxis: {
+                    //         type: 'category',
+                    //         boundaryGap: false,
+                    //         data: ['周一','周二','周三','周四','周五','周六','周日']
+                    //     },
+                    //     yAxis: {
+                    //         type: 'value'
+                    //     },
+                    //     series: [
+                    //         {
+                    //             name:'邮件营销',
+                    //             type:'line',
+                    //             stack: '总量',
+                    //             data:[120, 132, 101, 134, 90, 230, 210]
+                    //         },
+                    //         {
+                    //             name:'联盟广告',
+                    //             type:'line',
+                    //             stack: '总量',
+                    //             data:[220, 182, 191, 234, 290, 330, 310]
+                    //         },
+                    //         {
+                    //             name:'视频广告',
+                    //             type:'line',
+                    //             stack: '总量',
+                    //             data:[150, 232, 201, 154, 190, 330, 410]
+                    //         },
+                    //         {
+                    //             name:'直接访问',
+                    //             type:'line',
+                    //             stack: '总量',
+                    //             data:[320, 332, 301, 334, 390, 330, 320]
+                    //         },
+                    //         {
+                    //             name:'搜索引擎',
+                    //             type:'line',
+                    //             stack: '总量',
+                    //             data:[820, 932, 901, 934, 1290, 1330, 1320]
+                    //         }
+                    //     ]
+                    // });
+                    //饼图
+                    myChart3.setOption({
+                        backgroundColor: '#C6C6CC',
+
+                        title: {
+                            text: '订单成功率',
+                            left: 'center',
+                            top: 20,
+                            textStyle: {
+                                color: '#090909'
+                            }
+                        },
+
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: "{a} <br/>{b} : {c} ({d}%)"
+                        },
+
+                        // visualMap: {
+                        //     show: false,
+                        //     min: 80,
+                        //     max: 600,
+                        //     inRange: {
+                        //         colorLightness: [0, 1]
+                        //     }
+                        // },
+                        series: [
+                            {
+                                name: '123',
+                                type: 'pie',
+                                radius: '55%',
+                                center: ['50%', '50%'],
+                                data: [
+                                    {
+                                        value: data.totalCount.totalCount, name: '支付成功', itemStyle: {
+                                            color: '#2ec22d'
+                                        }
+                                    },
+                                    {
+                                        value: data.toPayCount.toPayCount, name: '下单未支付', itemStyle: {
+                                            color: '#17bec2'
+                                        }
+                                    },
+                                    {
+                                        value: data.failCount.failCount, name: '支付失败',
+                                        itemStyle: {
+                                            color: '#1856cc'
+                                        }
+                                    }
+                                ].sort(function (a, b) {
+                                    return a.value - b.value;
+                                }),
+                                roseType: 'angle',
+                                label: {
+                                    normal: {
+                                        textStyle: {
+                                            color: 'rgba(255, 255, 255, 0.3)'
+                                        }
+                                    }
+                                },
+                                labelLine: {
+                                    normal: {
+                                        lineStyle: {
+                                            color: 'rgba(255, 255, 255, 0.3)'
+                                        },
+                                        smooth: 0.2,
+                                        length: 10,
+                                        length2: 20
+                                    }
+                                },
+                                itemStyle: {
+                                    normal: {
+                                        color: '#c21821',
+                                        shadowBlur: 200,
+                                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                    }
+                                },
+                                // color:['#3fb0c2', 'green','yellow'],
+                                animationType: 'scale',
+                                animationEasing: 'elasticOut',
+                                animationDelay: function (idx) {
+                                    return Math.random() * 200;
+                                }
+                            }
+                        ]
+                    });
+                } else {
+                    alert(data.msg);
+                }
+            }
+        });
+    }
+</script>
+</html>

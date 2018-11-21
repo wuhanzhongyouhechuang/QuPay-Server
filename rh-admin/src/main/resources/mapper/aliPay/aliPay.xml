@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ntnikka.modules.pay.aliPay.dao.AliOrderDao">
+
+    <select id="checkRepeatId" parameterType="java.lang.String" resultType="java.lang.Integer">
+        SELECT count(1)
+        from trade_order
+        where order_id = #{orderId}
+    </select>
+
+    <select id="queryByTradeId" parameterType="java.lang.String"
+            resultType="com.ntnikka.modules.pay.aliPay.entity.AliOrderEntity">
+        select * from trade_order
+        where order_id = #{orderId}
+    </select>
+
+    <update id="updateTradeStatus" parameterType="map">
+        update trade_order set
+        status = 1
+        <if test="tradeNo !=null and tradeNo != ''">
+            , trade_no = #{tradeNo}
+        </if>
+        <if test="payTime != '' and payTime != null ">
+            , pay_time = #{payTime}
+        </if>
+        where sys_trade_no = #{orderId}
+    </update>
+
+    <update id="updateTradeStatusClosed" parameterType="java.lang.String">
+        update trade_order set
+        status = 2
+        where sys_trade_no = #{orderId}
+    </update>
+
+    <update id="updateNotifyStatus" parameterType="java.lang.String">
+        update trade_order set
+        notify_status = 1
+        where sys_trade_no = #{orderId}
+    </update>
+
+    <select id="queryBySysTradeNo" parameterType="java.lang.String"
+            resultType="com.ntnikka.modules.pay.aliPay.entity.AliOrderEntity">
+        select * from trade_order
+        WHERE sys_trade_no = #{sysTradeNo}
+    </select>
+</mapper>

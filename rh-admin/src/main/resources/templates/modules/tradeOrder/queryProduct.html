@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>查询商品</title>
+    <link rel="stylesheet" href="${request.contextPath}/statics/bootstrap/bootstrap.min.css">
+    <script src="${request.contextPath}/statics/jquery/jquery.min.js"></script>
+    <style>
+      * {
+        padding: 0;
+        margin: 0;
+      }
+      body,
+      html,
+      .query-pr {
+        height: 100%;
+      }
+      .search {
+        display: flex;
+        justify-content: flex-start;
+        height: 30px;
+        margin: 10px;
+      }
+      .search input {
+        height: 30px;
+      }
+      .search button {
+        height: 30px;
+        margin-left: 10px;
+      }
+      .redBg {
+        background: #ca5555;
+        color: #fff;
+      }
+      .greenBg {
+        background: rgb(114, 187, 114);
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="query-pr">
+      <div class="search">
+        <input type="text" placeholder="请输入商品交易id" />
+        <button type="button" class="btn btn-light" id="queryBtn">查询</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">商户ID</th>
+              <th scope="col">系统订单号</th>
+              <th scope="col">商户订单号</th>
+              <th scope="col">银行流水号</th>
+              <th scope="col">订单金额</th>
+              <th scope="col">订单状态</th>
+              <th scope="col">支付方式</th>
+              <th scope="col">订单生成日期</th>
+              <th scope="col">通知状态</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>
+<script>
+  // 点击查询显示结果
+  $('#queryBtn').click(function() {
+    $('tbody').empty();
+    var queryObj = {
+      tradeid: $('input[type = text]')
+        .val()
+        .trim(),
+    };
+    $.ajax({
+      type: 'post',
+      url: '../../tradeOrder/listCheck',
+      data: queryObj,
+      success: function(res) {
+        if (res.msg == 'success') {
+          // 展示的数据
+            if (res.page == null){
+                return;
+            }
+          var  displayData = res.page.list[0];
+          var tempStr = '';
+          tempStr = "<tr>"+
+                "<td>1</td>"+
+                "<td>"+displayData.merchantId+"</td>"+
+                "<td>"+displayData.sysTradeNo+"</td>"+
+                "<td>"+displayData.orderId+"</td>";
+          if (displayData.status == 1) {
+              tempStr += "<td>"+displayData.tradeNo+"</td>" + "<td>"+displayData.orderAmount+"</td>" + "<td class= 'greenBg'>已支付</td>" ;
+          }else if(displayData.status == 0){
+              tempStr += "<td></td>" + "<td>"+displayData.orderAmount+"</td>" + "<td class= 'redBg'>下单未支付</td>" ;
+          }else{
+              tempStr += "<td></td>" + "<td>"+displayData.orderAmount+"</td>" + "<td class= 'redBg'>下单失败</td>" ;
+          }
+          if (displayData.payType == "Wap") {
+              tempStr +=  "<td>WAP支付</td>";
+          }else {
+              tempStr +=  "<td>二维码支付</td>";
+          }
+          tempStr += "<td>"+displayData.createTime+"</td>";
+          if (displayData.notifyStatus == 0){
+              tempStr += "<td class= 'redBg'>未通知</td>"+"</tr>";
+          }else {
+              tempStr += "<td class= 'greenBg'>已通知</td>"+"</tr>";
+          }
+        }
+        $('tbody').append(tempStr);
+      },
+    });
+  });
+</script>
