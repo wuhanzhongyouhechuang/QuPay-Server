@@ -6,9 +6,11 @@ import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
 import com.alipay.api.DefaultAlipayClient;
 import com.alipay.api.request.AlipayOpenAuthTokenAppRequest;
+import com.alipay.api.request.AlipayTradeOrderSettleRequest;
 import com.alipay.api.request.AlipayTradePrecreateRequest;
 import com.alipay.api.request.AlipayTradeQueryRequest;
 import com.alipay.api.response.AlipayOpenAuthTokenAppResponse;
+import com.alipay.api.response.AlipayTradeOrderSettleResponse;
 import com.alipay.api.response.AlipayTradePrecreateResponse;
 import com.alipay.api.response.AlipayTradeQueryResponse;
 import com.ntnikka.modules.pay.aliPay.config.AlipayConfig;
@@ -43,9 +45,27 @@ public class AliPayRequest {
         }
         //设置业务参数alipayClient.execute(precreateRequest, appAuthToken)
         AlipayTradePrecreateResponse response = alipayClient.execute(request ,"",authToken);
-        System.out.print(response.getBody());
         //根据response中的结果继续业务逻辑处理
         logger.info("支付宝返回结果 ， {}" ,response.getBody());
+        return response.getBody();
+    }
+
+    public static String doSettleAliRequest(String appId , String privateKey , String aliPubKey , String trade_no ,BigDecimal orderAmount , String pid , String trans_in_id , String authToken) throws AlipayApiException{
+        AlipayClient alipayClient = new DefaultAlipayClient("https://openapi.alipay.com/gateway.do",appId,privateKey,"json",AlipayConfig.input_charset,aliPubKey,"RSA2");
+        AlipayTradeOrderSettleRequest request = new AlipayTradeOrderSettleRequest();
+        String out_request_no = IdWorker.getSysTradeNumShort();
+        request.setBizContent("{" +
+                "\"out_request_no\":" + out_request_no + "," +
+                "\"trade_no\": "+ trade_no +"," +
+                "\"royalty_parameters\":[{" +
+                "\"trans_out\":" + pid + "," +
+                "\"trans_in\":" + trans_in_id + "," +
+                "\"amount\": " + orderAmount + "," +
+                "\"desc\":\"分账\"" +
+                "}]" +
+                "  }");
+        AlipayTradeOrderSettleResponse response = alipayClient.execute(request,"", authToken);
+        logger.info("支付宝分账返回结果 ， {}" ,response.getBody());
         return response.getBody();
     }
 

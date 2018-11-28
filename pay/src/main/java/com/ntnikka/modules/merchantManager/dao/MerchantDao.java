@@ -19,4 +19,6 @@ public interface MerchantDao extends BaseMapper<MerchantEntity> {
     MerchantEntity findByPriKey(String priKey);
 
     MerchantEntity findById(Long id);
+
+    void updateSettleStatus(Map<String, Object> params);
 }

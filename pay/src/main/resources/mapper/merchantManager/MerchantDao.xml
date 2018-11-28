@@ -38,4 +38,10 @@
         select * from merchant
         where id = #{id}
     </select>
+
+    <update id="updateSettleStatus" parameterType="map">
+        update merchant set
+        settle_flag = #{settleStatus}
+        where id = #{merchantId}
+    </update>
 </mapper>

@@ -22,5 +22,7 @@ public interface MerchantService extends IService<MerchantEntity> {
     MerchantEntity findByPriKey(String priKey);
 
     MerchantEntity queryById(Long merchantId);
+
+    void updateSettleStatus(Map<String, Object> params);
 }
 

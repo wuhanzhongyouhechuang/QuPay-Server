@@ -80,6 +80,16 @@ public class AliOrderEntity implements Serializable {
 
     private int status;
 
+    private Long merchantDeptId;
+
+    public Long getMerchantDeptId() {
+        return merchantDeptId;
+    }
+
+    public void setMerchantDeptId(Long merchantDeptId) {
+        this.merchantDeptId = merchantDeptId;
+    }
+
     public int getStatus() {
         return status;
     }

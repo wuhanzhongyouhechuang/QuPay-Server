@@ -115,6 +115,7 @@ public class AliPayController extends AbstractController {
         aliOrderEntity.setMerchantName(merchant.getMerchantName());
         aliOrderEntity.setCreateTime(new Date());
         aliOrderEntity.setUpdateTime(new Date());
+        aliOrderEntity.setMerchantDeptId(merchant.getMerchantDeptId());
         aliOrderService.save(aliOrderEntity);
         //4.判断payMethod 22-支付宝 221-支付包免签 32-微信支付(第三方) 321-微信面前 421-QQ免签
         if (aliOrderEntity.getPayMethod() == "22" || aliOrderEntity.getPayMethod().equals("22")) {
@@ -124,13 +125,13 @@ public class AliPayController extends AbstractController {
                         merchant.getAppid().toString(), merchant.getMerchantPriKey(), merchant.getAliPubKey(), merchant.getAuthCode(), merchant.getPid().toString(), merchant.getStoreNumber());
                 JSONObject resultJson = JSON.parseObject(result).getJSONObject("alipay_trade_precreate_response");
                 //请求支付宝预下单接口异步保存返回信息
-                runAsync(() -> {//异步保存
-                    TradePrecreateMsg tradePrecreateMsg = new TradePrecreateMsg();
-                    tradePrecreateMsg.setCode(resultJson.getInteger("code"));
-                    tradePrecreateMsg.setOrderId(aliOrderEntity.getOrderId());
-                    tradePrecreateMsg.setMsg(resultJson.getString("msg"));
-                    tradePrecreateMsgService.save(tradePrecreateMsg);
-                });
+//                runAsync(() -> {//异步保存
+//                    TradePrecreateMsg tradePrecreateMsg = new TradePrecreateMsg();
+//                    tradePrecreateMsg.setCode(resultJson.getInteger("code"));
+//                    tradePrecreateMsg.setOrderId(aliOrderEntity.getOrderId());
+//                    tradePrecreateMsg.setMsg(resultJson.getString("msg"));
+//                    tradePrecreateMsgService.save(tradePrecreateMsg);
+//                });
                 if (resultJson.getInteger("code") != 10000) {
                     aliOrderService.updateTradeStatusClosed(aliOrderEntity.getSysTradeNo());
                     return R.error(403017, "下单失败").put("sub_code", resultJson.getString("sub_code")).put("sub_msg", resultJson.getString("sub_msg"));
@@ -272,49 +273,63 @@ public class AliPayController extends AbstractController {
                 logger.info("支付宝回调签名认证成功");
                 this.check(params);//验证业务参数
                 //验证有效
-                //异步处理业务数据
-                runAsync(() -> {
-
-                    String tradeStatus = params.get("trade_status");
-                    if (tradeStatus.equals(AlipayTradeStatus.TRADE_SUCCESS.getStatus()) || tradeStatus.equals(AlipayTradeStatus.TRADE_FINISHED.getStatus())) {//支付完成 支付成功 处理订单状态 通知商户
-                        Map<String, Object> map = new HashMap<>();
-                        map.put("orderId", aliOrderEntity.getSysTradeNo());
-                        map.put("tradeNo", params.get("trade_no"));
-                        logger.info("支付成功，支付时间 : {}", params.get("gmt_payment"));
-                        map.put("payTime", DateUtil.string2Date(params.get("gmt_payment")));
-                        aliOrderService.updateTradeOrder(map);
-                        //回调入库
-                        AliNotifyEntity aliNotifyEntity = new AliNotifyEntity();
-                        aliNotifyEntity.setOutTradeNo(params.get("out_trade_no"));
-                        aliNotifyEntity.setTradeNo(params.get("trade_no"));
-                        aliNotifyEntity.setAppId(params.get("app_id"));
-                        aliNotifyEntity.setBuyerId(params.get("buyer_id"));
-                        aliNotifyEntity.setTradeStatus(params.get("trade_status"));
-                        aliNotifyEntity.setTotalAmount(new BigDecimal(params.get("total_amount")));
-                        aliNotifyEntity.setReceiptAmount(new BigDecimal(params.get("receipt_amount")));
-                        aliNotifyEntity.setBuyerPayAmount(new BigDecimal(params.get("buyer_pay_amount")));
-                        aliNotifyEntity.setSubject(params.get("subject"));
-                        aliNotifyEntity.setGmtCreate(DateUtil.string2Date(params.get("gmt_create")));
-                        aliNotifyEntity.setCreatedAt(new Date());
-                        aliNotifyEntity.setUpdatedAt(new Date());
-                        aliNotifyService.save(aliNotifyEntity);
-                        //通知下游商户
-                        // TODO: 2018/9/21
-                        //测试回调暂时写死 后面修改 aliOrderEntity.getNotifyUrl()
-                        String returnMsg = this.doNotify(aliOrderEntity.getNotifyUrl(), aliOrderEntity.getOrderId().toString(), AlipayTradeStatus.TRADE_SUCCESS.getStatus(), aliOrderEntity.getOrderAmount().toString(), aliOrderEntity.getPartner());
-                        if (returnMsg.equals("success")) {
-                            logger.info("通知商户成功，修改通知状态");
-                            aliOrderService.updateNotifyStatus(aliOrderEntity.getSysTradeNo());
+                //异步处理业务数据(修改同步执行)
+                String tradeStatus = params.get("trade_status");
+                if (tradeStatus.equals(AlipayTradeStatus.TRADE_SUCCESS.getStatus()) || tradeStatus.equals(AlipayTradeStatus.TRADE_FINISHED.getStatus())) {//支付完成 支付成功 处理订单状态 通知商户
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("orderId", aliOrderEntity.getSysTradeNo());
+                    map.put("tradeNo", params.get("trade_no"));
+                    logger.info("支付成功，支付时间 : {}", params.get("gmt_payment"));
+                    map.put("payTime", DateUtil.string2Date(params.get("gmt_payment")));
+                    aliOrderService.updateTradeOrder(map);
+//                    //取消回调入库
+//                    AliNotifyEntity aliNotifyEntity = new AliNotifyEntity();
+//                    aliNotifyEntity.setOutTradeNo(params.get("out_trade_no"));
+//                    aliNotifyEntity.setTradeNo(params.get("trade_no"));
+//                    aliNotifyEntity.setAppId(params.get("app_id"));
+//                    aliNotifyEntity.setBuyerId(params.get("buyer_id"));
+//                    aliNotifyEntity.setTradeStatus(params.get("trade_status"));
+//                    aliNotifyEntity.setTotalAmount(new BigDecimal(params.get("total_amount")));
+//                    aliNotifyEntity.setReceiptAmount(new BigDecimal(params.get("receipt_amount")));
+//                    aliNotifyEntity.setBuyerPayAmount(new BigDecimal(params.get("buyer_pay_amount")));
+//                    aliNotifyEntity.setSubject(params.get("subject"));
+//                    aliNotifyEntity.setGmtCreate(DateUtil.string2Date(params.get("gmt_create")));
+//                    aliNotifyEntity.setCreatedAt(new Date());
+//                    aliNotifyEntity.setUpdatedAt(new Date());
+//                    aliNotifyService.save(aliNotifyEntity);
+                    //分账
+                    if (merchantEntity.getSettleFlag() == 0 && EmptyUtil.isNotEmpty(merchantEntity.getSettleId()) && EmptyUtil.isNotEmpty(merchantEntity.getSettleIdOut())) {
+                        String result = AliPayRequest.doSettleAliRequest(merchantEntity.getAppid().toString(), merchantEntity.getMerchantPriKey(), merchantEntity.getAliPubKey(), params.get("trade_no"), aliOrderEntity.getOrderAmount(), merchantEntity.getSettleIdOut(), merchantEntity.getSettleId(), merchantEntity.getAuthCode());
+                        JSONObject resultJson = JSON.parseObject(result).getJSONObject("alipay_trade_order_settle_response");
+                        if (resultJson.getInteger("code") != 10000) {
+                            logger.info("分账请求失败 ， 请求返回 : 错误码 , {} , 信息 , {}", resultJson.getString("sub_code"), resultJson.getString("sub_msg"));
+                            // TODO: 2018/11/26 如果分账账户被风控 修改settleFlag 后续此商户不再走分账
+                            if (resultJson.getInteger("code") == 40004){
+                                logger.info("分账账户异常 , 暂时关闭此商户分账功能");
+                                Map<String, Object> paramMap = new HashMap();
+                                paramMap.put("merchantId", merchantEntity.getId());
+                                paramMap.put("settleStatus", 1);
+                                merchantService.updateSettleStatus(paramMap);
+                            }
                         } else {
-                            logger.error("通知商户失败");
+                            logger.info("分账请求成功");
                         }
-
-                    } else if (tradeStatus.equals(AlipayTradeStatus.TRADE_CLOSED.getStatus())) {
-                        aliOrderService.updateTradeStatusClosed(aliOrderEntity.getSysTradeNo());
-                    } else {
-                        logger.error("没有处理支付宝回调业务，支付宝交易状态: {} ", tradeStatus);
                     }
-                });
+                    //通知下游商户
+                    // TODO: 2018/9/21
+                    //测试回调暂时写死 后面修改 aliOrderEntity.getNotifyUrl()
+                    String returnMsg = this.doNotify(aliOrderEntity.getNotifyUrl(), aliOrderEntity.getOrderId().toString(), AlipayTradeStatus.TRADE_SUCCESS.getStatus(), aliOrderEntity.getOrderAmount().toString(), aliOrderEntity.getPartner());
+                    if (returnMsg.equals("success")) {
+                        logger.info("通知商户成功，修改通知状态");
+                        aliOrderService.updateNotifyStatus(aliOrderEntity.getSysTradeNo());
+                    } else {
+                        logger.error("通知商户失败");
+                    }
+                } else if (tradeStatus.equals(AlipayTradeStatus.TRADE_CLOSED.getStatus())) {
+                    aliOrderService.updateTradeStatusClosed(aliOrderEntity.getSysTradeNo());
+                } else {
+                    logger.error("没有处理支付宝回调业务，支付宝交易状态: {} ", tradeStatus);
+                }
                 return "success";
             } else {
                 logger.error("支付宝回调签名认证失败，signVerified=false, paramsJson:{}", paramsJson);

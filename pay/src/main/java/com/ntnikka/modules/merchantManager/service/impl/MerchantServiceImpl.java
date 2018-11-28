@@ -65,4 +65,9 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantDao, MerchantEntity
     public MerchantEntity queryById(Long merchantId) {
         return merchantDao.findById(merchantId);
     }
+
+    @Override
+    public void updateSettleStatus(Map<String, Object> params) {
+
+    }
 }
