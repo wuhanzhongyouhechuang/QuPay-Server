@@ -128,8 +128,8 @@ public class MerchantController {
 
     @RequestMapping("/export")
     public void exportYesterdayByDeptId(HttpServletRequest request, HttpServletResponse response) throws Exception{
-        //excel文件名
-        String fileName = "订单信息" + System.currentTimeMillis() + ".xls";
+        //excel文件名deptName
+        String fileName = request.getParameter("deptName") + "订单信息" + System.currentTimeMillis() + ".xls";
         //sheet名
         String sheetName = "订单信息";
 
