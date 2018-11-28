@@ -5,7 +5,7 @@
     <title>商户销售统计</title>
     <#include "/header.html">
 </head>
-<body>
+<body onload="barQuery();">
 <div id="rrapp" v-cloak>
     <form class="form-horizontal">
         <div class="grid-btn">
@@ -187,18 +187,18 @@
         var myChart = echarts.init(document.getElementById('main'));
         // var myChart2 = echarts.init(document.getElementById('main2'));
         var myChart3 = echarts.init(document.getElementById('main3'));
-        var merchantNum = $("#merchantNum").val();
-        if (merchantNum == "" || merchantNum.trim().length == 0) {
-            alert("请先选择合作商户");
-            return false;
-        }
+        var merchantNum = $("#merchantNum").val() == "" ? null : $("#merchantNum").val();
+        // if (merchantNum == "" || merchantNum.trim().length == 0) {
+        //     alert("请先选择合作商户");
+        //     return false;
+        // }
         $.ajax({
             url: baseURL + "/tradeOrder/merchantCount",
             type: 'post',
             data: JSON.stringify({
                 "starttime": $("#starttime").val(),
                 "endtime": $("#endtime").val(),
-                "merchantdept": $("#merchantNum").val()
+                "merchantdept": merchantNum
             }),//一同上传的数据
             dataType: 'json', //返回值类型一般设置为json
             contentType: 'application/json;charset=utf-8',

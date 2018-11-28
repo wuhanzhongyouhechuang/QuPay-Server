@@ -2,8 +2,10 @@ package com.ntnikka.modules.merchantManager.service;
 
 import com.baomidou.mybatisplus.service.IService;
 import com.ntnikka.modules.merchantManager.entity.MerchantEntity;
+import com.ntnikka.modules.orderManager.entity.TradeOrder;
 import com.ntnikka.utils.PageUtils;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -22,5 +24,11 @@ public interface MerchantService extends IService<MerchantEntity> {
     MerchantEntity findByPriKey(String priKey);
 
     MerchantEntity queryById(Long merchantId);
+
+    void updateSettleStatus(Map<String, Object> params);
+
+    List<MerchantEntity> hasOrder();
+
+    List<TradeOrder> queryYesterdayOrderList(Map<String, Object> params);
 }
 

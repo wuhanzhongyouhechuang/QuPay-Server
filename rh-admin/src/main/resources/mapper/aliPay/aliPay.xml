@@ -21,7 +21,7 @@
         <if test="tradeNo !=null and tradeNo != ''">
             , trade_no = #{tradeNo}
         </if>
-        <if test="payTime != '' and payTime != null ">
+        <if test="payTime != null ">
             , pay_time = #{payTime}
         </if>
         where sys_trade_no = #{orderId}

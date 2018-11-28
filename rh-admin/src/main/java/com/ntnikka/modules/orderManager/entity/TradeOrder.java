@@ -60,6 +60,16 @@ public class TradeOrder implements Serializable {
 
     private String merchantName;
 
+    private Long merchantDeptId;
+
+    public Long getMerchantDeptId() {
+        return merchantDeptId;
+    }
+
+    public void setMerchantDeptId(Long merchantDeptId) {
+        this.merchantDeptId = merchantDeptId;
+    }
+
     public String getMerchantName() {
         return merchantName;
     }

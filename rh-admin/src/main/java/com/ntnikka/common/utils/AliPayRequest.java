@@ -51,6 +51,25 @@ public class AliPayRequest {
         return response.getBody();
     }
 
+    public static String doSettleAliRequest(String appId , String privateKey , String aliPubKey , String trade_no ,BigDecimal orderAmount , String pid , String trans_in_id , String authToken) throws AlipayApiException{
+        AlipayClient alipayClient = new DefaultAlipayClient("https://openapi.alipay.com/gateway.do",appId,privateKey,"json",AlipayConfig.input_charset,aliPubKey,"RSA2");
+        AlipayTradeOrderSettleRequest request = new AlipayTradeOrderSettleRequest();
+        String out_request_no = IdWorker.getSysTradeNumShort();
+        request.setBizContent("{" +
+                "\"out_request_no\":" + out_request_no + "," +
+                "\"trade_no\": "+ trade_no +"," +
+                "\"royalty_parameters\":[{" +
+                "\"trans_out\":" + pid + "," +
+                "\"trans_in\":" + trans_in_id + "," +
+                "\"amount\": " + orderAmount + "," +
+                "\"desc\":\"分账\"" +
+                "}]" +
+                "  }");
+        AlipayTradeOrderSettleResponse response = alipayClient.execute(request,"", authToken);
+        logger.info("支付宝分账返回结果 ， {}" ,response.getBody());
+        return response.getBody();
+    }
+
     public static String getAuthToken(String appId, String privateKey, String aliPubKey, String authCode) throws AlipayApiException {
         AlipayClient alipayClient = new DefaultAlipayClient("https://openapi.alipay.com/gateway.do", appId, privateKey, "json", AlipayConfig.input_charset, aliPubKey, AlipayConfig.sign_type_RSA2);
 //        AlipaySystemOauthTokenRequest request = new AlipaySystemOauthTokenRequest();

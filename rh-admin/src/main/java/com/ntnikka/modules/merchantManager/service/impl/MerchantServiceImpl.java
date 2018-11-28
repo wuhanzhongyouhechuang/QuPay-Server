@@ -11,11 +11,13 @@ import com.ntnikka.modules.merchantManager.entity.MerchantDept;
 import com.ntnikka.modules.merchantManager.entity.MerchantEntity;
 import com.ntnikka.modules.merchantManager.service.MerchantDeptService;
 import com.ntnikka.modules.merchantManager.service.MerchantService;
+import com.ntnikka.modules.orderManager.entity.TradeOrder;
 import com.ntnikka.utils.PageUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 
 
@@ -66,5 +68,20 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantDao, MerchantEntity
     @Override
     public MerchantEntity queryById(Long merchantId) {
         return merchantDao.findById(merchantId);
+    }
+
+    @Override
+    public void updateSettleStatus(Map<String, Object> params) {
+       merchantDao.updateSettleStatus(params);
+    }
+
+    @Override
+    public List<MerchantEntity> hasOrder() {
+        return merchantDao.hasOrder();
+    }
+
+    @Override
+    public List<TradeOrder> queryYesterdayOrderList(Map<String, Object> params) {
+        return merchantDao.queryYesterdayOrderList(params);
     }
 }

@@ -27,6 +27,12 @@
         where id = #{merchantId}
     </update>
 
+    <update id="updateSettleStatus" parameterType="map">
+        update merchant set
+        settle_flag = #{settleStatus}
+        where id = #{merchantId}
+    </update>
+
     <select id="findByPriKey" parameterType="java.lang.String"
             resultType="com.ntnikka.modules.merchantManager.entity.MerchantEntity">
         SELECT * from merchant where
@@ -37,5 +43,37 @@
             resultType="com.ntnikka.modules.merchantManager.entity.MerchantEntity">
         select * from merchant
         where id = #{id}
+    </select>
+
+    <select id="hasOrder" resultType="com.ntnikka.modules.merchantManager.entity.MerchantEntity">
+        SELECT DISTINCT(merchant_dept_id) ,merchant_dept_name
+        from merchant where id in
+        ( SELECT merchant_id
+        from trade_order
+        where create_time BETWEEN DATE_ADD(DATE_SUB(CURDATE(),INTERVAL 1 DAY),INTERVAL 0 HOUR)
+        and DATE_ADD(DATE_SUB(CURDATE(),INTERVAL 1 DAY),INTERVAL 24 HOUR)
+        and status = 1
+        GROUP BY merchant_id )
+    </select>
+
+    <select id="queryYesterdayOrderList" parameterType="map" resultType="com.ntnikka.modules.orderManager.entity.TradeOrder">
+        SELECT
+        a.id,
+        a.merchant_id AS merchantId,
+        a.merchant_name AS merchantName,
+        a.pay_type AS payType,
+        a.order_id AS orderId,
+        a.trade_no AS tradeNo,
+        a.sys_trade_no AS sysTradeNo,
+        a.order_amount AS orderAmount,
+        a.pay_time AS payTime,
+        a.notify_status AS notifyStatus
+        FROM
+        trade_order a
+        WHERE
+        a.merchant_dept_id = #{deptId}
+        AND a. STATUS = 1
+        AND a.create_time between DATE_ADD(DATE_SUB(CURDATE(),INTERVAL 1 DAY),INTERVAL 0 HOUR)
+        AND DATE_SUB(DATE_ADD(DATE_SUB(CURDATE(),INTERVAL 1 DAY),INTERVAL 24 HOUR),INTERVAL 1 SECOND)
     </select>
 </mapper>

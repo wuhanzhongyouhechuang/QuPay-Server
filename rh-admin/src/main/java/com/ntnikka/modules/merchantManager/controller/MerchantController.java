@@ -1,20 +1,28 @@
 package com.ntnikka.modules.merchantManager.controller;
 
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import com.ntnikka.common.utils.ExcelUtil;
 import com.ntnikka.modules.merchantManager.entity.MerchantDept;
 import com.ntnikka.modules.merchantManager.entity.MerchantEntity;
 import com.ntnikka.modules.merchantManager.service.MerchantDeptService;
 import com.ntnikka.modules.merchantManager.service.MerchantService;
+import com.ntnikka.modules.orderManager.entity.TradeOrder;
 import com.ntnikka.modules.pay.aliPay.utils.MD5Utils;
 import com.ntnikka.utils.PageUtils;
 import com.ntnikka.utils.R;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 
 /**
@@ -66,6 +74,20 @@ public class MerchantController {
         return R.ok();
     }
 
+    @RequestMapping(value = "/settlestatus", method = RequestMethod.POST)
+    public R updateSettleStatus(@RequestBody Map params) {
+        int settleStatus = 0; //默认开启
+        if (Integer.parseInt(params.get("settleStatus").toString()) == 0) {//关闭
+            settleStatus = 1;
+        }
+        Long id = Long.parseLong(params.get("merchantId").toString());
+        Map<String, Object> paramMap = new HashMap();
+        paramMap.put("merchantId", id);
+        paramMap.put("settleStatus", settleStatus);
+        merchantService.updateSettleStatus(paramMap);
+        return R.ok();
+    }
+
     /**
      * 保存
      */
@@ -95,6 +117,41 @@ public class MerchantController {
         merchantService.deleteBatchIds(Arrays.asList(ids));
 
         return R.ok();
+    }
+
+    @RequestMapping("/hasOrder")
+    public R queryMerchantHasOrder(){
+        List<MerchantEntity> merchantEntityList = merchantService.hasOrder();
+        PageUtils page = new PageUtils(merchantEntityList,merchantEntityList.size(),merchantEntityList.size(),1);
+        return R.ok().put("page",page);
+    }
+
+    @RequestMapping("/export")
+    public void exportYesterdayByDeptId(HttpServletRequest request, HttpServletResponse response) throws Exception{
+        //excel文件名
+        String fileName = "订单信息" + System.currentTimeMillis() + ".xls";
+        //sheet名
+        String sheetName = "订单信息";
+
+        Map<String, Object> params = new HashMap();
+        params.put("deptId" ,request.getParameter("merchantDeptId"));
+        List<TradeOrder> tradeOrderList = merchantService.queryYesterdayOrderList(params);
+
+        String[][] content = ExcelUtil.getContent(tradeOrderList);
+
+        //创建HSSFWorkbook
+        HSSFWorkbook wb = ExcelUtil.getHSSFWorkbook(sheetName,ExcelUtil.title , content, null);
+
+        //响应到客户端
+        try {
+            ExcelUtil.setResponseHeader(response, fileName);
+            OutputStream os = response.getOutputStream();
+            wb.write(os);
+            os.flush();
+            os.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }

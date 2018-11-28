@@ -2,9 +2,11 @@ package com.ntnikka.modules.merchantManager.dao;
 
 import com.baomidou.mybatisplus.mapper.BaseMapper;
 import com.ntnikka.modules.merchantManager.entity.MerchantEntity;
+import com.ntnikka.modules.orderManager.entity.TradeOrder;
 import org.springframework.stereotype.Repository;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -20,4 +22,10 @@ public interface MerchantDao extends BaseMapper<MerchantEntity> {
     MerchantEntity findByPriKey(String priKey);
 
     MerchantEntity findById(Long id);
+
+    void updateSettleStatus(Map<String, Object> params);
+
+    List<MerchantEntity> hasOrder();
+
+    List<TradeOrder> queryYesterdayOrderList(Map<String, Object> params);
 }

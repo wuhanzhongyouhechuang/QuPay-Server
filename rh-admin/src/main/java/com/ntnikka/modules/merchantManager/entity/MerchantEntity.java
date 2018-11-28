@@ -87,6 +87,36 @@ public class MerchantEntity implements Serializable {
 
     private String wechatKey;
 
+    private String settleId;
+
+    private Integer settleFlag;
+
+    private String settleIdOut;
+
+    public String getSettleIdOut() {
+        return settleIdOut;
+    }
+
+    public void setSettleIdOut(String settleIdOut) {
+        this.settleIdOut = settleIdOut;
+    }
+
+    public String getSettleId() {
+        return settleId;
+    }
+
+    public void setSettleId(String settleId) {
+        this.settleId = settleId;
+    }
+
+    public Integer getSettleFlag() {
+        return settleFlag;
+    }
+
+    public void setSettleFlag(Integer settleFlag) {
+        this.settleFlag = settleFlag;
+    }
+
     public String getWechatNum() {
         return wechatNum;
     }

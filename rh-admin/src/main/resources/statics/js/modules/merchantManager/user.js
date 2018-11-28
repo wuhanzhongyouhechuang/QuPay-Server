@@ -26,6 +26,14 @@ $(function () {
                 }
             },
             {
+                label: '分账开关', name: 'settleFlag', width: 65,
+                formatter: function (value, options, row) {
+                    return value === 0 ?
+                        '<span class="label label-success pointer" onclick="vm.updateSettleStatus(\'' + value + '\',\'' + row.id + '\')">关闭分账</span>' :
+                        '<span class="label label-danger pointer" onclick="vm.updateSettleStatus(\'' + value + '\',\'' + row.id + '\')">开启分账</span>';
+                }
+            },
+            {
                 label: '通道配置', name: 'id', width: 65,
                 formatter: function (value, options, row) {
                     return '<span class="label label-success pointer" onclick="vm.audit(\'' + value + '\')">详情</span>'
@@ -107,7 +115,9 @@ var vm = new Vue({
             merchantDeptName: null,
             mobileUrl: null,
             wechantNum: null,
-            wechantKey: null
+            wechantKey: null,
+            settleId : null,
+            settleIdOut : null
         }
     },
     methods: {
@@ -191,7 +201,9 @@ var vm = new Vue({
                 merchantDeptName: null,
                 mobileUrl: null,
                 wechatNum: null,
-                wechatKey: null
+                wechatKey: null,
+                settleId : null,
+                settleIdOut : null
             };
             vm.user = {deptName: null, deptId: null, status: 1, roleIdList: []};
 
@@ -292,6 +304,28 @@ var vm = new Vue({
                 $.ajax({
                     type: "POST",
                     url: baseURL + "merchant/mgr/tradestatus",
+                    contentType: "application/json",
+                    data: dataMap,
+                    success: function (r) {
+                        if (r.code === 0) {
+                            alert('操作成功', function () {
+                                vm.reload();
+                            });
+                        } else {
+                            alert(r.msg);
+                        }
+                    }
+                });
+            });
+        },
+        updateSettleStatus: function (value, id) {
+            // console.log(value);//开启状态传来的value为0
+            // console.log(id);
+            confirm('确定修改商户分账？', function () {
+                var dataMap = '{"merchantId":"' + id + '" , "settleStatus":"' + value + '"}';
+                $.ajax({
+                    type: "POST",
+                    url: baseURL + "merchant/mgr/settlestatus",
                     contentType: "application/json",
                     data: dataMap,
                     success: function (r) {
