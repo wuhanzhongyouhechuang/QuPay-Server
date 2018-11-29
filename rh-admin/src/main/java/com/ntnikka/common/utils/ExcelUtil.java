@@ -90,7 +90,7 @@ public class ExcelUtil {
     public static void setResponseHeader(HttpServletResponse response, String fileName) {
         try {
             try {
-                fileName = new String(fileName.getBytes(), "ISO8859-1");
+                fileName = new String(fileName.getBytes("GBK"), "ISO8859-1");
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }

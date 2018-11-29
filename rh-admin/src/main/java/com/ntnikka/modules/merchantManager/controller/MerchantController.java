@@ -1,6 +1,7 @@
 package com.ntnikka.modules.merchantManager.controller;
 
 import java.io.OutputStream;
+import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -129,7 +130,8 @@ public class MerchantController {
     @RequestMapping("/export")
     public void exportYesterdayByDeptId(HttpServletRequest request, HttpServletResponse response) throws Exception{
         //excel文件名deptName
-        String fileName = request.getParameter("deptName") + "订单信息" + System.currentTimeMillis() + ".xls";
+        String tmpName = URLDecoder.decode(request.getParameter("deptName") , "utf-8");
+        String fileName = tmpName + "订单信息" + System.currentTimeMillis() + ".xls";
         //sheet名
         String sheetName = "订单信息";
 
