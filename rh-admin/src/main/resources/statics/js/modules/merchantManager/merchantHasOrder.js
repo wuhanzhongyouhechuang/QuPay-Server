@@ -11,7 +11,7 @@ $(function () {
             {label: '部门名称', name: 'merchantDeptName', index: 'merchantDeptName', width: 50},
             {label: '导出昨日订单excel' ,name: 'merchantDeptId', width: 50 ,
                 formatter: function (value, options, row) {
-                    return '<span class="label label-success pointer" onclick="vm.export(\'' + value + '\',\'' + row.merchantDeptName + '\')">导出</span>'
+                    return '<span class="label label-success pointer" onclick="exportExcel(\'' + value + '\',\'' + row.merchantDeptName + '\')">导出</span>'
                 }}
         ],
         viewrecords: true,
@@ -85,9 +85,6 @@ var vm = new Vue({
             $.get(baseURL + "abd/info/" + id, function (r) {
                 vm.abd = r.abd;
             });
-        },
-        export: function(deptId , deptName){
-            window.location.href = baseURL + "/merchant/mgr/export" + "?merchantDeptId=" + deptId +"&deptName=" + deptName;
         },
         reload: function (event) {
             vm.showList = true;

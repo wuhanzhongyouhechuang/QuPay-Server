@@ -13,5 +13,10 @@
     </div>
 </div>
 <script src="${request.contextPath}/statics/js/modules/merchantManager/merchantHasOrder.js?_${.now?long}"></script>
+<script>
+    function exportExcel(deptId , deptName){
+        window.location.href = baseURL + "/merchant/mgr/export" + "?merchantDeptId=" + deptId +"&deptName=" + deptName;
+    }
+</script>
 </body>
 </html>
