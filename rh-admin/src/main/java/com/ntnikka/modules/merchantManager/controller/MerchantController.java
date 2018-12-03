@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.ntnikka.common.utils.ExcelUtil;
+import com.ntnikka.modules.merchantManager.entity.ChannelEntity;
 import com.ntnikka.modules.merchantManager.entity.MerchantDept;
 import com.ntnikka.modules.merchantManager.entity.MerchantEntity;
 import com.ntnikka.modules.merchantManager.service.MerchantDeptService;
@@ -50,6 +51,15 @@ public class MerchantController {
         return R.ok().put("page", page);
     }
 
+    /**
+     * 个人码商户列表
+     */
+    @RequestMapping("/listPri")
+    public R listPri(@RequestParam Map<String, Object> params) {
+        PageUtils page = merchantService.queryPageForPriMerchant(params);
+        return R.ok().put("page", page);
+    }
+
 
     /**
      * 信息
@@ -59,6 +69,15 @@ public class MerchantController {
         MerchantEntity merchant = merchantService.selectById(id);
 
         return R.ok().put("merchant", merchant);
+    }
+
+    /**
+     * channel信息
+     */
+    @RequestMapping("/channelInfo/{id}")
+    public R channelInfo(@PathVariable("id") Long id) {
+        List<ChannelEntity> channelEntityList = merchantService.queryChannelList(id);
+        return R.ok().put("specList", channelEntityList);
     }
 
     @RequestMapping(value = "/tradestatus", method = RequestMethod.POST)
@@ -107,6 +126,15 @@ public class MerchantController {
     public R update(@RequestBody MerchantEntity merchant) {
         merchantService.updateById(merchant);
 
+        return R.ok();
+    }
+
+    /**
+     * 修改(个人码商户)
+     */
+    @RequestMapping("/updatePri")
+    public R updatePri(@RequestBody MerchantEntity merchant) {
+        merchantService.updatePri(merchant);
         return R.ok();
     }
 

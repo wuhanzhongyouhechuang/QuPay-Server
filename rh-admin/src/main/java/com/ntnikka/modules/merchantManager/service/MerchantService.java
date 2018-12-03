@@ -1,6 +1,7 @@
 package com.ntnikka.modules.merchantManager.service;
 
 import com.baomidou.mybatisplus.service.IService;
+import com.ntnikka.modules.merchantManager.entity.ChannelEntity;
 import com.ntnikka.modules.merchantManager.entity.MerchantEntity;
 import com.ntnikka.modules.orderManager.entity.TradeOrder;
 import com.ntnikka.utils.PageUtils;
@@ -30,5 +31,11 @@ public interface MerchantService extends IService<MerchantEntity> {
     List<MerchantEntity> hasOrder();
 
     List<TradeOrder> queryYesterdayOrderList(Map<String, Object> params);
+
+    PageUtils queryPageForPriMerchant(Map<String, Object> params);
+
+    List<ChannelEntity> queryChannelList(Long merchantId);
+
+    void updatePri(MerchantEntity merchantEntity);
 }
 

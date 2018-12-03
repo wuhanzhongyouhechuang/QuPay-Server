@@ -7,8 +7,10 @@ import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import com.ntnikka.common.utils.EmptyUtil;
 import com.ntnikka.common.utils.Query;
 import com.ntnikka.modules.merchantManager.dao.MerchantDao;
+import com.ntnikka.modules.merchantManager.entity.ChannelEntity;
 import com.ntnikka.modules.merchantManager.entity.MerchantDept;
 import com.ntnikka.modules.merchantManager.entity.MerchantEntity;
+import com.ntnikka.modules.merchantManager.service.ChannelService;
 import com.ntnikka.modules.merchantManager.service.MerchantDeptService;
 import com.ntnikka.modules.merchantManager.service.MerchantService;
 import com.ntnikka.modules.orderManager.entity.TradeOrder;
@@ -29,6 +31,9 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantDao, MerchantEntity
 
     @Autowired
     MerchantDeptService merchantDeptService;
+
+    @Autowired
+    ChannelService channelService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -58,6 +63,10 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantDao, MerchantEntity
         merchantDept.setDelFlag(0);
         merchantDept.setMerchantId(merchantEntity.getId());
         merchantDeptService.insert(merchantDept);
+        for (ChannelEntity channelEntity : merchantEntity.getChannelList()){
+            channelEntity.setMerchantId(merchantEntity.getId());
+        }
+        channelService.save(merchantEntity.getChannelList());
     }
 
     @Override
@@ -83,5 +92,33 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantDao, MerchantEntity
     @Override
     public List<TradeOrder> queryYesterdayOrderList(Map<String, Object> params) {
         return merchantDao.queryYesterdayOrderList(params);
+    }
+
+    @Override
+    public PageUtils queryPageForPriMerchant(Map<String, Object> params) {
+        String merchantId = (String) params.get("id");
+        Page<MerchantEntity> page = this.selectPage(
+                new Query<MerchantEntity>(params).getPage(),
+                new EntityWrapper<MerchantEntity>().eq(EmptyUtil.isNotEmpty(merchantId), "id", EmptyUtil.isNotEmpty(merchantId) ? Long.parseLong(merchantId) : "")
+                .eq("pri_flag" , 1)
+        );
+        return new PageUtils(page);
+    }
+
+    @Override
+    public List<ChannelEntity> queryChannelList(Long merchantId) {
+        return channelService.queryChannelByMerchantid(merchantId);
+    }
+
+    @Override
+    @Transactional
+    public void updatePri(MerchantEntity merchantEntity) {
+        this.updateById(merchantEntity);
+        for (ChannelEntity channelEntity : merchantEntity.getChannelList()){
+            if (EmptyUtil.isEmpty(channelEntity.getId())){
+                channelEntity.setMerchantId(merchantEntity.getId());
+            }
+        }
+        channelService.batchSaveAndUpdate(merchantEntity.getChannelList());
     }
 }

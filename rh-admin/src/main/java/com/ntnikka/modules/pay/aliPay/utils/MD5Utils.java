@@ -72,7 +72,7 @@ public class MD5Utils {
 
     public static String creatMerchantKey(MerchantEntity merchantEntity) {
         String str = "phone=" + merchantEntity.getMerchantPhone() + "&pid" + merchantEntity.getPid() + "&storeNumber=" + merchantEntity.getStoreNumber()
-                + "&authCode=" + merchantEntity.getAuthCode();
+                + "&authCode=" + merchantEntity.getAuthCode()+"&dt=" + System.currentTimeMillis();
         String merchantKey = encode(str).toUpperCase();
         return merchantKey;
     }
