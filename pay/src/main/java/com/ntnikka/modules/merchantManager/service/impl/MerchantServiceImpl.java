@@ -68,6 +68,6 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantDao, MerchantEntity
 
     @Override
     public void updateSettleStatus(Map<String, Object> params) {
-
+        merchantDao.updateSettleStatus(params);
     }
 }
