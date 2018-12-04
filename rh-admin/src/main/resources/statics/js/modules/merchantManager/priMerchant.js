@@ -29,14 +29,20 @@ $(function () {
                 label: '轮询开关', name: 'pollingFlag', width: 65,
                 formatter: function (value, options, row) {
                     return value === 0 ?
-                        '<span class="label label-danger pointer">开启轮询</span>' :
-                        '<span class="label label-success pointer">关闭轮询</span>';
+                        '<span class="label label-danger pointer" onclick="vm.updatePolling(\'' + row.id + '\' , \'' + value + '\')">开启轮询</span>' :
+                        '<span class="label label-success pointer" onclick="vm.updatePolling(\'' + row.id + '\' , \'' + value + '\')">关闭轮询</span>';
                 }
             },
             {
-                label: '通道配置', name: 'id', width: 65,
+                label: '设置', name: 'id', width: 65,
                 formatter: function (value, options, row) {
                     return '<span class="label label-success pointer" onclick="vm.audit(\'' + value + '\')">详情</span>'
+                }
+            },
+            {
+                label: '通道设置', name: 'id', width: 65,
+                formatter: function (value, options, row) {
+                    return '<span class="label label-success pointer" onclick="vm.channelSetting(\'' + value + '\')">通道设置</span>'
                 }
             }
         ],
@@ -66,6 +72,53 @@ $(function () {
             $("#jqGrid").closest(".ui-jqgrid-bdiv").css({"overflow-x": "hidden"});
         }
     });
+    $("#jqGridChannel").jqGrid({
+        url: baseURL + 'merchant/mgr/channelInfo/list',
+        postData : {"merchantId" : 1000},
+        datatype: "json",
+        colModel: [
+            {label: 'ID', name: 'id', index: "id", width: 45, key: true},
+            {label: '通道地址', name: 'url', sortable: false, width: 75},
+            // {label: '权重', name: 'weight', sortable: false, width: 75},//权重字段预留deviceCode
+            {label: '设备标识', name: 'deviceCode', sortable: false, width: 75},
+            {label: '通道开关', name: 'flag', sortable: false, width: 60 , formatter: function (value, options, row) {
+                    return value === 0 ?
+                        '<span class="label label-success pointer" onclick="vm.updateChannel(\'' + value + '\',\'' + row.id + '\',\'' + row.merchantId + '\')">关闭通道</span>' :
+                        '<span class="label label-danger pointer" onclick="vm.updateChannel(\'' + value + '\',\'' + row.id + '\',\'' + row.merchantId + '\')">开启通道</span>';
+                }
+            },
+            {
+                label: '操作', name: 'id', width: 60, formatter: function (value, options, row) {
+                    return '<span class="label label-danger pointer" onclick="vm.delChannel(\'' + row.id + '\',\'' + row.merchantId + '\')">删除通道</span>';
+                }
+            }
+        ],
+        viewrecords: true,
+        height: 720,
+        rowNum: 10,
+        rowList: [10, 30, 50],
+        rownumbers: true,
+        rownumWidth: 25,
+        autowidth: true,
+        multiselect: false,
+        pager: "#jqGridPagerChannel",
+        jsonReader: {
+            root: "page.list",
+            page: "page.currPage",
+            total: "page.totalPage",
+            records: "page.totalCount"
+        },
+        prmNames: {
+            page: "page",
+            rows: "limit",
+            order: "order"
+        },
+        gridComplete: function () {
+            //隐藏grid底部滚动条
+            $("#jqGridChannel").closest(".ui-jqgrid-bdiv").css({"overflow-x": "hidden"});
+            $(window).trigger("resize");
+        }
+    });
 });
 var setting = {
     data: {
@@ -91,6 +144,7 @@ var vm = new Vue({
         showList: true,
         showList2: false,
         showList3: false,
+        showList4:false,
         title: null,
         roleList: {},
         user: {
@@ -101,7 +155,8 @@ var vm = new Vue({
         },
         specList: [{
             url: null,
-            weight: null
+            weight: null,
+            deviceCode : null
         }],
         specList2: [],
         merchant: {
@@ -122,12 +177,14 @@ var vm = new Vue({
             var data={};
             data.values = null;
             data.weight = null ;
+            data.deviceCode = null;
             vm.specList.push(data);
         },
         addSpecUpdate: function(){
             var data={};
             data.values = null;
             data.weight = null ;
+            data.deviceCode = null;
             vm.specList2.push(data);
         },
         delSpec: function(index,item){
@@ -157,6 +214,75 @@ var vm = new Vue({
                         alert(r.msg);
                     }
                 }
+            });
+        },
+        channelSetting: function(value){
+            vm.showList = false;
+            vm.showList4 = true;
+            var page = $("#jqGridChannel").jqGrid('getGridParam', 'page');
+            $("#jqGridChannel").jqGrid('setGridParam', {
+                postData: {'merchantId': value},
+                page: page
+            }).trigger("reloadGrid");
+        },
+        updateChannel: function(value, id , merchantId){
+            confirm('确定关闭或开启通道开关？', function () {
+                var dataMap = '{"id":"' + id + '" , "flag":"' + value + '"}';
+                $.ajax({
+                    type: "POST",
+                    url: baseURL + "merchant/mgr/updateChannelFlag",
+                    contentType: "application/json",
+                    data: dataMap,
+                    success: function (r) {
+                        if (r.code === 0) {
+                            alert('操作成功', function () {
+                                vm.channelSetting(merchantId);
+                            });
+                        } else {
+                            alert(r.msg);
+                        }
+                    }
+                });
+            });
+        },
+        delChannel: function(id , merchantId){
+            confirm('确定删除通道？一旦删除不可恢复', function () {
+                var dataMap = '{"id":"' + id + '"}';
+                $.ajax({
+                    type: "POST",
+                    url: baseURL + "merchant/mgr/deleteChannel",
+                    contentType: "application/json",
+                    data: dataMap,
+                    success: function (r) {
+                        if (r.code === 0) {
+                            alert('操作成功', function () {
+                                vm.channelSetting(merchantId);
+                            });
+                        } else {
+                            alert(r.msg);
+                        }
+                    }
+                });
+            });
+        },
+        updatePolling: function(id , value){
+            confirm('确定关闭或开启轮询?', function () {
+                var dataMap = '{"id":"' + id + '" , "flag":"' + value + '"}';
+                $.ajax({
+                    type: "POST",
+                    url: baseURL + "merchant/mgr/updatePolling",
+                    contentType: "application/json",
+                    data: dataMap,
+                    success: function (r) {
+                        if (r.code === 0) {
+                            alert('操作成功', function () {
+                                vm.reload();
+                            });
+                        } else {
+                            alert(r.msg);
+                        }
+                    }
+                });
             });
         },
         audit: function (value) {
@@ -251,6 +377,25 @@ var vm = new Vue({
             });
         },
         saveOrUpdate: function () {
+            if(vm.merchant.id == null){
+                if (vm.merchant.merchantName == null) {
+                    alert("商户名不能为空!");
+                    return ;
+                }
+                if (vm.merchant.merchantPhone == null) {
+                    alert("联系方式不能为空!");
+                    return ;
+                }
+                if (vm.merchant.merchantDeptName == null || vm.merchant.merchantDeptId == null) {
+                    alert("所属部门不能为空!");
+                    return ;
+                }
+                if (vm.specList[0].url == null){
+                    alert("请至少添加一条通道地址!");
+                    return ;
+                }
+
+            }
             var url = vm.merchant.id == null ? "merchant/mgr/save" : "merchant/mgr/updatePri";
             vm.merchant.channelList = vm.merchant.id == null ? vm.specList : vm.specList.concat(vm.specList2);
             $.ajax({
@@ -364,6 +509,7 @@ var vm = new Vue({
             vm.showList = true;
             vm.showList2 = false;
             vm.showList3 = false;
+            vm.showList4 = false;
             var page = $("#jqGrid").jqGrid('getGridParam', 'page');
             $("#jqGrid").jqGrid('setGridParam', {
                 postData: {'id': vm.merchant.id},

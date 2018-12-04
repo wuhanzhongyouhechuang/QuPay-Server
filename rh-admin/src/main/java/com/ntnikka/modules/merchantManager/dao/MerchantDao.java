@@ -28,4 +28,6 @@ public interface MerchantDao extends BaseMapper<MerchantEntity> {
     List<MerchantEntity> hasOrder();
 
     List<TradeOrder> queryYesterdayOrderList(Map<String, Object> params);
+
+    void updatePolling(Map map);
 }

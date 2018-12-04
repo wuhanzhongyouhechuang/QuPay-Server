@@ -80,6 +80,16 @@ public class MerchantController {
         return R.ok().put("specList", channelEntityList);
     }
 
+    /**
+     * channel信息
+     */
+    @RequestMapping("/channelInfo/list")
+    public R queryChannelInfo(@RequestParam Map<String, Object> params) {
+        List<ChannelEntity> channelEntityList = merchantService.queryChannelList(Long.parseLong(params.get("merchantId").toString()));
+        PageUtils pageUtils = new PageUtils(channelEntityList , channelEntityList.size() , channelEntityList.size() ,1);
+        return R.ok().put("page", pageUtils);
+    }
+
     @RequestMapping(value = "/tradestatus", method = RequestMethod.POST)
     public R updateTradeStatus(@RequestBody Map params) {
         int tradeStatus = 0; //默认开启
@@ -145,6 +155,43 @@ public class MerchantController {
     public R delete(@RequestBody Long[] ids) {
         merchantService.deleteBatchIds(Arrays.asList(ids));
 
+        return R.ok();
+    }
+
+    @RequestMapping("/updateChannelFlag")
+    public R closeChannel(@RequestBody Map params){
+        int flag = 0; //默认开启
+        if (Integer.parseInt(params.get("flag").toString()) == 0) {//关闭
+            flag = 1;
+        }
+        Long id = Long.parseLong(params.get("id").toString());
+        Map paramMap = new HashMap();
+        paramMap.put("id" , id);
+        paramMap.put("flag" , flag);
+        merchantService.updateChannelFlag(paramMap);
+        return R.ok();
+    }
+
+    @RequestMapping("/deleteChannel")
+    public R deleteChannel(@RequestBody Map params){
+        Long id = Long.parseLong(params.get("id").toString());
+        Map paramMap = new HashMap();
+        paramMap.put("id" , id);
+        merchantService.delChannel(paramMap);
+        return R.ok();
+    }
+
+    @RequestMapping("/updatePolling")
+    public R updatePolling(@RequestBody Map params){
+        int flag = 0; //默认关闭
+        if (Integer.parseInt(params.get("flag").toString()) == 0) {//关闭
+            flag = 1;
+        }
+        Long id = Long.parseLong(params.get("id").toString());
+        Map paramMap = new HashMap();
+        paramMap.put("id" , id);
+        paramMap.put("flag" , flag);
+        merchantService.updatePolling(paramMap);
         return R.ok();
     }
 

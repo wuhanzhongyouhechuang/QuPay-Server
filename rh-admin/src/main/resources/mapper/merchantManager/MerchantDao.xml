@@ -76,4 +76,10 @@
         AND a.create_time between DATE_ADD(DATE_SUB(CURDATE(),INTERVAL 1 DAY),INTERVAL 0 HOUR)
         AND DATE_SUB(DATE_ADD(DATE_SUB(CURDATE(),INTERVAL 1 DAY),INTERVAL 24 HOUR),INTERVAL 1 SECOND)
     </select>
+
+    <update id="updatePolling" parameterType="map">
+        update merchant
+        set polling_flag = #{flag}
+        where id = #{id}
+    </update>
 </mapper>

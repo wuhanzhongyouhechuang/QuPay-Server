@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.service.IService;
 import com.ntnikka.modules.merchantManager.entity.ChannelEntity;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @ClassName ChannelService
@@ -17,4 +18,8 @@ public interface ChannelService extends IService<ChannelEntity> {
     List<ChannelEntity> queryChannelByMerchantid(Long merchantId);
 
     void batchSaveAndUpdate(List<ChannelEntity> channelEntityList);
+
+    void updateChannelFlag(Map map);
+
+    void delChannel(Map map);
 }

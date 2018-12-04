@@ -11,23 +11,18 @@
             <div class="form-group col-sm-2">
                 <input type="text" v-model="merchant.id" class="form-control" @keyup.enter="query" placeholder="商户ID">
             </div>
-            <!--
-              完整语法
-            <a v-on:click="doSomething">...</a>
-              缩写
-            <a @click="doSomething">...</a>
-             -->
             <a class="btn btn-default" @click="query">查询</a>
             <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
-            <!--<#if shiro.hasPermission("sys:user:update")>-->
-            <!--<a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>-->
-            <!--</#if>-->
-            <!--<#if shiro.hasPermission("sys:user:delete")>-->
-            <!--<a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>-->
-            <!--</#if>-->
         </div>
         <table class="jqGridTable" id="jqGrid"></table>
         <div id="jqGridPager"></div>
+    </div>
+    <div v-show="showList4">
+        <div class="grid-btn">
+            <a class="btn btn-primary" @click="reload">返回</a>
+        </div>
+        <table class="jqGridTable" id="jqGridChannel"></table>
+        <div id="jqGridPagerChannel"></div>
     </div>
     <!--新增-->
     <div v-show="showList3" class="panel panel-default">
@@ -59,6 +54,10 @@
                     <div class="col-sm-2 control-label">手机外网地址</div>
                     <div class="col-sm-10">
                         <input type="text" class="form-control" v-model="item.url" placeholder=""/>
+                    </div>
+                    <div class="col-sm-2 control-label">设备编号</div>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" v-model="item.deviceCode" placeholder=""/>
                         <input type="button" class="btn btn-primary" style="float: right" @click="delSpec(index,item)" value="撤回"/>
                     </div>
                 </div>
@@ -81,6 +80,14 @@
                     <div class="col-sm-10">
                       <input type="text" class="form-control" v-model="item.url" placeholder=""/>
                     </div>
+                    <div class="col-sm-2 control-label">设备编号</div>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" v-model="item.deviceCode" placeholder=""/>
+                    </div>
+                    <!--<div class="col-sm-2 control-label">权重</div>-->
+                    <!--<div class="col-sm-10">-->
+                        <!--<input type="text" class="form-control" v-model="item.weight" placeholder=""/>-->
+                    <!--</div>-->
                 </div>
             </div>
             <div  v-for="(item ,index) in specList2" :key="index">
@@ -88,6 +95,10 @@
                     <div class="col-sm-2 control-label">手机外网地址</div>
                     <div class="col-sm-10">
                         <input type="text" class="form-control" v-model="item.url" placeholder=""/>
+                    </div>
+                    <div class="col-sm-2 control-label">设备编号</div>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" v-model="item.deviceCode" placeholder=""/>
                         <input type="button" class="btn btn-primary" style="float: right" @click="delSpecUpdate(index,item)" value="撤回"/>
                     </div>
                 </div>

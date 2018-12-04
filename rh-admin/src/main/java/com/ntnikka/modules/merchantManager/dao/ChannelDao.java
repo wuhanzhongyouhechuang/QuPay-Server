@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.mapper.BaseMapper;
 import com.ntnikka.modules.merchantManager.entity.ChannelEntity;
 import org.springframework.stereotype.Repository;
 
+import java.util.Map;
+
 /**
  * @ClassName ChannelDao
  * @Author Liuq
@@ -12,5 +14,7 @@ import org.springframework.stereotype.Repository;
  **/
 @Repository
 public interface ChannelDao extends BaseMapper<ChannelEntity> {
+    void updateChannelFlag(Map map);
 
+    void delChannel(Map map);
 }

@@ -37,6 +37,18 @@ public class ChannelEntity implements Serializable {
      * 删除标志 0-正常 ，-1-删除
      */
     private int delFlag;
+    /**
+     * 设备编号
+     */
+    private String deviceCode;
+
+    public String getDeviceCode() {
+        return deviceCode;
+    }
+
+    public void setDeviceCode(String deviceCode) {
+        this.deviceCode = deviceCode;
+    }
 
     public Long getId() {
         return id;

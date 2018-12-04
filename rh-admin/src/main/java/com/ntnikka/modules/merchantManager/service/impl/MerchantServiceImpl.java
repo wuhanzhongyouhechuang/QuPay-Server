@@ -63,10 +63,12 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantDao, MerchantEntity
         merchantDept.setDelFlag(0);
         merchantDept.setMerchantId(merchantEntity.getId());
         merchantDeptService.insert(merchantDept);
-        for (ChannelEntity channelEntity : merchantEntity.getChannelList()){
-            channelEntity.setMerchantId(merchantEntity.getId());
+        if (EmptyUtil.isNotEmpty(merchantEntity.getChannelList())) {
+            for (ChannelEntity channelEntity : merchantEntity.getChannelList()) {
+                channelEntity.setMerchantId(merchantEntity.getId());
+            }
+            channelService.save(merchantEntity.getChannelList());
         }
-        channelService.save(merchantEntity.getChannelList());
     }
 
     @Override
@@ -120,5 +122,20 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantDao, MerchantEntity
             }
         }
         channelService.batchSaveAndUpdate(merchantEntity.getChannelList());
+    }
+
+    @Override
+    public void updateChannelFlag(Map map) {
+        channelService.updateChannelFlag(map);
+    }
+
+    @Override
+    public void delChannel(Map map) {
+        channelService.delChannel(map);
+    }
+
+    @Override
+    public void updatePolling(Map map) {
+        merchantDao.updatePolling(map);
     }
 }
