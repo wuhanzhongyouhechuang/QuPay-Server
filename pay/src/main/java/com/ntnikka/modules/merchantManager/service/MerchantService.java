@@ -26,5 +26,7 @@ public interface MerchantService extends IService<MerchantEntity> {
     void updateSettleStatus(Map<String, Object> params);
 
     void closeChannel(Long channelId);
+
+    void closeTradeStatus(Long merchantId);
 }
 

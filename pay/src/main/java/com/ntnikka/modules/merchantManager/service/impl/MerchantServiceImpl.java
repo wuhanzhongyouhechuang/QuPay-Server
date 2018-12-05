@@ -75,4 +75,9 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantDao, MerchantEntity
     public void closeChannel(Long channelId) {
         merchantDao.closeChannel(channelId);
     }
+
+    @Override
+    public void closeTradeStatus(Long merchantId) {
+        merchantDao.closeTradeStatus(merchantId);
+    }
 }

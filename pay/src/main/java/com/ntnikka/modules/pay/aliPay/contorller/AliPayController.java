@@ -307,11 +307,8 @@ public class AliPayController extends AbstractController {
                         if (resultJson.getInteger("code") != 10000) {
                             logger.info("分账请求失败 ， 请求返回 : 错误码 , {} , 信息 , {}", resultJson.getString("sub_code"), resultJson.getString("sub_msg"));
                             if (resultJson.getInteger("code") == 40004){
-                                logger.info("分账账户异常 , 暂时关闭此商户分账功能");
-                                Map<String, Object> paramMap = new HashMap();
-                                paramMap.put("merchantId", merchantEntity.getId());
-                                paramMap.put("settleStatus", 1);
-                                merchantService.updateSettleStatus(paramMap);
+                                logger.info("分账账户异常 , 暂时关闭此商户交易功能");
+                                merchantService.closeTradeStatus(merchantEntity.getId());
                             }
                         } else {
                             logger.info("分账请求成功");

@@ -50,4 +50,10 @@
       set flag = 1
       where  id = #{channelId}
     </update>
+
+    <update id="closeTradeStatus" parameterType="Long">
+        update merchant set
+        trade_status = 1
+        where id = #{merchantId}
+    </update>
 </mapper>
