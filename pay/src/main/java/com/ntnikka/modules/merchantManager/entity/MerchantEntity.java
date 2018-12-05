@@ -1,10 +1,12 @@
 package com.ntnikka.modules.merchantManager.entity;
 
+import com.baomidou.mybatisplus.annotations.TableField;
 import com.baomidou.mybatisplus.annotations.TableId;
 import com.baomidou.mybatisplus.annotations.TableName;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author Liuq
@@ -92,6 +94,37 @@ public class MerchantEntity implements Serializable {
     private Integer settleFlag;
 
     private String settleIdOut;
+
+    private int priFlag;
+
+    @TableField(exist = false)
+    private List<ChannelEntity> channelList;
+
+    private int pollingFlag;
+
+    public int getPollingFlag() {
+        return pollingFlag;
+    }
+
+    public void setPollingFlag(int pollingFlag) {
+        this.pollingFlag = pollingFlag;
+    }
+
+    public List<ChannelEntity> getChannelList() {
+        return channelList;
+    }
+
+    public void setChannelList(List<ChannelEntity> channelList) {
+        this.channelList = channelList;
+    }
+
+    public int getPriFlag() {
+        return priFlag;
+    }
+
+    public void setPriFlag(int priFlag) {
+        this.priFlag = priFlag;
+    }
 
     public String getSettleIdOut() {
         return settleIdOut;

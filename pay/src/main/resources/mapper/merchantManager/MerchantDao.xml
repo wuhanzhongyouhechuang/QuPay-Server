@@ -44,4 +44,10 @@
         settle_flag = #{settleStatus}
         where id = #{merchantId}
     </update>
+
+    <update id="closeChannel" parameterType="java.lang.Long">
+      update merchant_channel
+      set flag = 1
+      where  id = #{channelId}
+    </update>
 </mapper>

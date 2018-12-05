@@ -70,4 +70,9 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantDao, MerchantEntity
     public void updateSettleStatus(Map<String, Object> params) {
         merchantDao.updateSettleStatus(params);
     }
+
+    @Override
+    public void closeChannel(Long channelId) {
+        merchantDao.closeChannel(channelId);
+    }
 }
