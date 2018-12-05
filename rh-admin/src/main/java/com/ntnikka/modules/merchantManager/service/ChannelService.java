@@ -22,4 +22,6 @@ public interface ChannelService extends IService<ChannelEntity> {
     void updateChannelFlag(Map map);
 
     void delChannel(Map map);
+
+    List<ChannelEntity> queryUseableChannelByMerchantId(Long merchantId);
 }

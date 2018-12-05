@@ -8,7 +8,9 @@ import com.alipay.api.internal.util.AlipaySignature;
 import com.ntnikka.common.Enum.AlipayTradeStatus;
 import com.ntnikka.common.Enum.PayTypeEnum;
 import com.ntnikka.common.utils.*;
+import com.ntnikka.modules.merchantManager.entity.ChannelEntity;
 import com.ntnikka.modules.merchantManager.entity.MerchantEntity;
+import com.ntnikka.modules.merchantManager.service.ChannelService;
 import com.ntnikka.modules.merchantManager.service.MerchantService;
 import com.ntnikka.modules.pay.aliPay.config.AlipayConfig;
 import com.ntnikka.modules.pay.aliPay.config.WechatConfig;
@@ -38,6 +40,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
@@ -56,12 +59,10 @@ public class AliPayController extends AbstractController {
     private AliOrderService aliOrderService;
 
     @Autowired
-    private TradePrecreateMsgService tradePrecreateMsgService;
-    @Autowired
     private MerchantService merchantService;
-    @Autowired
-    private AliNotifyService aliNotifyService;
 
+    @Autowired
+    private ChannelService channelService;
 //    @Autowired
 //    private StringRedisTemplate redisTemplate;
 
@@ -87,11 +88,6 @@ public class AliPayController extends AbstractController {
             logger.error("验签失败, sign = {} , paramstr = {}", sign, ParamStr);
             return R.error(403013, "验签失败");
         }
-        //校验商户时候有权限操作
-//        MerchantEntity merchantEntity = merchantService.findByPriKey(aliOrderEntity.getPartner());
-//        if (merchant == null){
-//            return R.error(403015, "商户不存在");
-//        }
         if (merchant.getTradeStatus() == 1) {
             return R.error(403016, "该商户已关闭交易权限，请联系客服人员");
         }
@@ -101,11 +97,19 @@ public class AliPayController extends AbstractController {
             return R.error(403014, "订单流水号重复");
         }
         //如果为个人码支付，先判断是否配置了相对应绑定手机外网地址
-        if (aliOrderEntity.getPayMethod().equals("221") || aliOrderEntity.getPayMethod().equals("321") || aliOrderEntity.getPayMethod().equals("421")) {
-            String mobileUrl = merchant.getMobileUrl();
-            if (StringUtils.isEmpty(mobileUrl)) {//如果为空 返回先配置url
-                logger.error("商户个人码绑定手机地址未配置 ， merchantId = {} ", merchant.getId());
-                return R.error(405000, "下单失败，个人码相关配置缺漏，请联系客服人员");
+        if (merchant.getPriFlag() == 0) {
+            if (aliOrderEntity.getPayMethod().equals("221") || aliOrderEntity.getPayMethod().equals("321") || aliOrderEntity.getPayMethod().equals("421")) {
+                String mobileUrl = merchant.getMobileUrl();
+                if (StringUtils.isEmpty(mobileUrl)) {//如果为空 返回先配置url
+                    logger.error("商户个人码绑定手机地址未配置 ， merchantId = {} ", merchant.getId());
+                    return R.error(405000, "下单失败，个人码相关配置缺漏，请联系客服人员");
+                }
+            }
+        }else {//个人码商户
+            List<ChannelEntity> channelEntityList = channelService.queryUseableChannelByMerchantId(merchant.getId());
+            if (EmptyUtil.isEmpty(channelEntityList)){
+                logger.error("个人码商户无可用通道 ， merchantId = {} ", merchant.getId());
+                return R.error(405000, "下单失败，无可用通道 ，请配置");
             }
         }
         //微信下单，先校验是否配置了第三方商户id和密钥
@@ -124,22 +128,14 @@ public class AliPayController extends AbstractController {
         aliOrderEntity.setCreateTime(new Date());
         aliOrderEntity.setUpdateTime(new Date());
         aliOrderEntity.setMerchantDeptId(merchant.getMerchantDeptId());
+        aliOrderEntity.setMerchantDeptName(merchant.getMerchantDeptName());
         aliOrderService.save(aliOrderEntity);
         //4.判断payMethod 22-支付宝 221-支付包免签 32-微信支付(第三方) 321-微信面前 421-QQ免签
         if (aliOrderEntity.getPayMethod() == "22" || aliOrderEntity.getPayMethod().equals("22")) {
-            //todo 支付宝原逻辑
             try {
                 String result = AliPayRequest.doQrCodeAliRequest(aliOrderEntity.getSysTradeNo(), aliOrderEntity.getOrderAmount(), aliOrderEntity.getProductName(),
                         merchant.getAppid().toString(), merchant.getMerchantPriKey(), merchant.getAliPubKey(), merchant.getAuthCode(), merchant.getPid().toString(), merchant.getStoreNumber());
                 JSONObject resultJson = JSON.parseObject(result).getJSONObject("alipay_trade_precreate_response");
-                //请求支付宝预下单接口异步保存返回信息
-//                runAsync(() -> {//异步保存
-//                    TradePrecreateMsg tradePrecreateMsg = new TradePrecreateMsg();
-//                    tradePrecreateMsg.setCode(resultJson.getInteger("code"));
-//                    tradePrecreateMsg.setOrderId(aliOrderEntity.getOrderId());
-//                    tradePrecreateMsg.setMsg(resultJson.getString("msg"));
-//                    tradePrecreateMsgService.save(tradePrecreateMsg);
-//                });
                 if (resultJson.getInteger("code") != 10000) {
                     aliOrderService.updateTradeStatusClosed(aliOrderEntity.getSysTradeNo());
                     return R.error(403017, "下单失败").put("sub_code", resultJson.getString("sub_code")).put("sub_msg", resultJson.getString("sub_msg"));
@@ -219,8 +215,31 @@ public class AliPayController extends AbstractController {
                     return R.error(407000, "请输入正确的payMethod值");
             }
             //1.获取免签手机外网地址
-            //String reqUrl = String.format(merchantEntity.getMobileUrl()+"/getpay?money=%s&mark=%s&type=alipay",aliOrderEntity.getOrderAmount(),aliOrderEntity.getSysTradeNo());
-            String result = MobileRequest.createOrderMobile(merchant.getMobileUrl(), aliOrderEntity.getOrderAmount(), aliOrderEntity.getSysTradeNo(), payType);
+            //判断商户是普通或者个人码商户
+            String mobileUrl = "";
+            Long channelId = 0L;
+            if (merchant.getPriFlag() == 0){
+                mobileUrl = merchant.getMobileUrl();
+            }else {
+                List<ChannelEntity> channelEntityList = channelService.queryUseableChannelByMerchantId(merchant.getId());
+                if (merchant.getPollingFlag() == 1){//开启轮询
+                    int index = PollingUtil.RandomIndex(channelEntityList.size());
+                    mobileUrl = channelEntityList.get(index).getUrl();
+                    channelId = channelEntityList.get(index).getId();
+                }else {//轮询关闭
+                    mobileUrl = channelEntityList.get(0).getUrl();
+                    channelId = channelEntityList.get(0).getId();
+                }
+            }
+            String result = MobileRequest.createOrderMobile(mobileUrl, aliOrderEntity.getOrderAmount(), aliOrderEntity.getSysTradeNo(), payType);
+            if (EmptyUtil.isEmpty(result)){
+                logger.info("个人码通道无返回 ，下单失败");
+                if (merchant.getPriFlag() == 1){
+                    logger.info("个人码手机通道无返回  , 暂时关闭通道 ，请检查通道 : {} , 通道ID : {}" , merchant.getId(),channelId);
+                    merchantService.closeChannel(channelId);
+                }
+                return R.error(405000, "个人码通道无返回 ，请检查相关配置");
+            }
             JSONObject resultJson = JSON.parseObject(result);
             Map resultMap = new HashMap();
             if (resultJson.getString("msg").contains("获取成功")) {

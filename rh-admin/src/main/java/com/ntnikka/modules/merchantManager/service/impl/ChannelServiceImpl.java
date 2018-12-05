@@ -29,6 +29,13 @@ public class ChannelServiceImpl extends ServiceImpl<ChannelDao , ChannelEntity> 
     }
 
     @Override
+    public List<ChannelEntity> queryUseableChannelByMerchantId(Long merchantId) {
+        return this.selectList( new EntityWrapper<ChannelEntity>().eq("merchant_id" , merchantId)
+                .eq("del_flag",0)
+                .eq("flag",0));
+    }
+
+    @Override
     public List<ChannelEntity> queryChannelByMerchantid(Long merchantId) {
         return this.selectList( new EntityWrapper<ChannelEntity>().eq("merchant_id" , merchantId).eq("del_flag",0));
     }

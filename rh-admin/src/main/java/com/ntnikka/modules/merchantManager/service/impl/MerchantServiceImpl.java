@@ -138,4 +138,16 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantDao, MerchantEntity
     public void updatePolling(Map map) {
         merchantDao.updatePolling(map);
     }
+
+    @Override
+    public void closeChannel(Long channelId) {
+        merchantDao.closeChannel(channelId);
+    }
+
+    @Override
+    public List<MerchantEntity> queryMerchantList(List<String> idList) {
+        return this.selectList(new EntityWrapper<MerchantEntity>()
+                .eq("pri_flag",1)
+        .in("merchant_dept_id" , idList));
+    }
 }

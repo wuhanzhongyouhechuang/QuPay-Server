@@ -30,4 +30,6 @@ public interface MerchantDao extends BaseMapper<MerchantEntity> {
     List<TradeOrder> queryYesterdayOrderList(Map<String, Object> params);
 
     void updatePolling(Map map);
+
+    void closeChannel(Long channelId);
 }

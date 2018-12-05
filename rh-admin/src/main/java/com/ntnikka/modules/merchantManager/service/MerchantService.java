@@ -43,5 +43,9 @@ public interface MerchantService extends IService<MerchantEntity> {
     void delChannel(Map map);
 
     void updatePolling(Map map);
+
+    void closeChannel(Long channelId);
+
+    List<MerchantEntity> queryMerchantList(List<String> idList);
 }
 

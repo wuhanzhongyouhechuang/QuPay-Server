@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>订单管理</title>
+    <#include "/header.html">
+</head>
+<body>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+            <div class="form-group col-sm-4">
+                <input type="text" id="merchantName" class="form-control" style="cursor:pointer;" @click="deptTree"
+                       readonly="readonly" placeholder="选择商户"/>
+                <input type="hidden" id="merchantNum" class="form-control" style="cursor:pointer;" readonly="readonly"/>
+            </div>
+            <a class="btn btn-default" @click="query">查询</a>
+        </div>
+        <table class="jqGridTable" id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+</div>
+<!-- 选择部门 -->
+<div id="deptLayer" style="display: none;padding:10px;">
+    <ul id="deptTree" class="ztree"></ul>
+</div>
+<script src="${request.contextPath}/statics/js/modules/merchantManager/channelList.js?_${.now?long}"></script>
+</body>
+</html>

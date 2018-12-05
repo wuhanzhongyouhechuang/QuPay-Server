@@ -2,11 +2,9 @@ package com.ntnikka.modules.merchantManager.controller;
 
 import java.io.OutputStream;
 import java.net.URLDecoder;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import com.ntnikka.common.utils.EmptyUtil;
 import com.ntnikka.common.utils.ExcelUtil;
 import com.ntnikka.modules.merchantManager.entity.ChannelEntity;
 import com.ntnikka.modules.merchantManager.entity.MerchantDept;
@@ -15,6 +13,7 @@ import com.ntnikka.modules.merchantManager.service.MerchantDeptService;
 import com.ntnikka.modules.merchantManager.service.MerchantService;
 import com.ntnikka.modules.orderManager.entity.TradeOrder;
 import com.ntnikka.modules.pay.aliPay.utils.MD5Utils;
+import com.ntnikka.modules.sys.controller.AbstractController;
 import com.ntnikka.utils.PageUtils;
 import com.ntnikka.utils.R;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -34,7 +33,7 @@ import javax.servlet.http.HttpServletResponse;
  */
 @RestController
 @RequestMapping("/merchant/mgr")
-public class MerchantController {
+public class MerchantController extends AbstractController {
 
     @Autowired
     private MerchantService merchantService;
@@ -229,6 +228,17 @@ public class MerchantController {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @RequestMapping("/selectMerchant")
+    public R selectParent() {
+        String deptIdList = getUser().getMerchantDeptId() == null ? "" : getUser().getMerchantDeptId();
+        if (EmptyUtil.isEmpty(deptIdList)){
+            return R.ok().put("merchantList" ,new ArrayList<MerchantEntity>());
+        }
+        List<String> idList = Arrays.asList(deptIdList.split(","));
+        List<MerchantEntity> merchantEntityList = merchantService.queryMerchantList(idList);
+        return R.ok().put("merchantList", merchantEntityList);
     }
 
 }

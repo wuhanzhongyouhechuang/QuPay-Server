@@ -82,4 +82,10 @@
         set polling_flag = #{flag}
         where id = #{id}
     </update>
+
+    <update id="closeChannel" parameterType="java.lang.Long">
+      update merchant_channel
+      set flag = 1
+      where  id = #{channelId}
+    </update>
 </mapper>
