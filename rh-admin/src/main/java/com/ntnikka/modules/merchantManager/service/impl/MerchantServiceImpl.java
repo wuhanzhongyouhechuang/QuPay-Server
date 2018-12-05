@@ -39,9 +39,14 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantDao, MerchantEntity
     public PageUtils queryPage(Map<String, Object> params) {
         //String merchantName = (String) params.get("merchantName");
         String merchantId = (String) params.get("id");
+        String merchantName = (String) params.get("merchantName");
+        String merchantDeptName = (String) params.get("merchantDeptName");
         Page<MerchantEntity> page = this.selectPage(
                 new Query<MerchantEntity>(params).getPage(),
                 new EntityWrapper<MerchantEntity>().eq(EmptyUtil.isNotEmpty(merchantId), "id", EmptyUtil.isNotEmpty(merchantId) ? Long.parseLong(merchantId) : "")
+                .like(EmptyUtil.isNotEmpty(merchantName) , "merchant_name" ,merchantName)
+                .like(EmptyUtil.isNotEmpty(merchantDeptName) , "merchant_dept_name" ,merchantDeptName)
+                .eq("pri_flag",0)
         );
 
         return new PageUtils(page);
@@ -99,10 +104,14 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantDao, MerchantEntity
     @Override
     public PageUtils queryPageForPriMerchant(Map<String, Object> params) {
         String merchantId = (String) params.get("id");
+        String merchantName = (String) params.get("merchantName");
+        String merchantDeptName = (String) params.get("merchantDeptName");
         Page<MerchantEntity> page = this.selectPage(
                 new Query<MerchantEntity>(params).getPage(),
                 new EntityWrapper<MerchantEntity>().eq(EmptyUtil.isNotEmpty(merchantId), "id", EmptyUtil.isNotEmpty(merchantId) ? Long.parseLong(merchantId) : "")
                 .eq("pri_flag" , 1)
+                .like(EmptyUtil.isNotEmpty(merchantName) , "merchant_name" ,merchantName)
+                .like(EmptyUtil.isNotEmpty(merchantDeptName) , "merchant_dept_name" ,merchantDeptName)
         );
         return new PageUtils(page);
     }

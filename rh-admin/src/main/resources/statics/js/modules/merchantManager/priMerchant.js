@@ -512,7 +512,7 @@ var vm = new Vue({
             vm.showList4 = false;
             var page = $("#jqGrid").jqGrid('getGridParam', 'page');
             $("#jqGrid").jqGrid('setGridParam', {
-                postData: {'id': vm.merchant.id},
+                postData: {'id': vm.merchant.id , 'merchantName' : vm.merchant.merchantName , 'merchantDeptName': vm.merchant.merchantDeptName},
                 page: page
             }).trigger("reloadGrid");
         }

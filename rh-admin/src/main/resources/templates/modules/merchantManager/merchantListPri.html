@@ -11,6 +11,12 @@
             <div class="form-group col-sm-2">
                 <input type="text" v-model="merchant.id" class="form-control" @keyup.enter="query" placeholder="商户ID">
             </div>
+            <div class="form-group col-sm-2">
+                <input type="text" v-model="merchant.merchantName" class="form-control" @keyup.enter="query" placeholder="商户名">
+            </div>
+            <div class="form-group col-sm-2">
+                <input type="text" v-model="merchant.merchantDeptName" class="form-control" @keyup.enter="query" placeholder="上级归属商户">
+            </div>
             <a class="btn btn-default" @click="query">查询</a>
             <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
         </div>

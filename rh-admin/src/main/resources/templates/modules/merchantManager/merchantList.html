@@ -11,20 +11,14 @@
             <div class="form-group col-sm-2">
                 <input type="text" v-model="merchant.id" class="form-control" @keyup.enter="query" placeholder="商户ID">
             </div>
-            <!--
-              完整语法
-            <a v-on:click="doSomething">...</a>
-              缩写
-            <a @click="doSomething">...</a>
-             -->
+            <div class="form-group col-sm-2">
+                <input type="text" v-model="merchant.merchantName" class="form-control" @keyup.enter="query" placeholder="商户名">
+            </div>
+            <div class="form-group col-sm-2">
+                <input type="text" v-model="merchant.merchantDeptName" class="form-control" @keyup.enter="query" placeholder="上级归属商户">
+            </div>
             <a class="btn btn-default" @click="query">查询</a>
             <a class="btn btn-primary" @click="add"><i class="fa fa-plus"></i>&nbsp;新增</a>
-            <!--<#if shiro.hasPermission("sys:user:update")>-->
-            <!--<a class="btn btn-primary" @click="update"><i class="fa fa-pencil-square-o"></i>&nbsp;修改</a>-->
-            <!--</#if>-->
-            <!--<#if shiro.hasPermission("sys:user:delete")>-->
-            <!--<a class="btn btn-primary" @click="del"><i class="fa fa-trash-o"></i>&nbsp;删除</a>-->
-            <!--</#if>-->
         </div>
         <table class="jqGridTable" id="jqGrid"></table>
         <div id="jqGridPager"></div>
