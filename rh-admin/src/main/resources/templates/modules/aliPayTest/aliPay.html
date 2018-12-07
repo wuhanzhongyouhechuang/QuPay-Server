@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+
+<body>
+<script type="text/javascript">
+    var u = navigator.userAgent;
+    var isIOS = !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/);
+    function ready(callback) {
+        // 如果jsbridge已经注入则直接调用
+        if (window.AlipayJSBridge) {
+            callback && callback();
+        } else {
+            // 如果没有注入则监听注入的事件
+            document.addEventListener('AlipayJSBridgeReady', callback, false);
+        }
+    }
+    function getQueryString(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        var r = window.location.search.substr(1).match(reg);
+        if (r != null) return unescape(r[2]);
+        return null;
+    }
+    function returnApp() {
+        if(isIOS){
+            AlipayJSBridge.call('exitAliapp');
+        }else{
+            AlipayJSBridge.call('exitApp');
+        }
+    }
+    ready(function () {
+        var userId=getQueryString("userId");
+        var amount=getQueryString("amount");
+        var memo=getQueryString("mark");
+        try {
+            var a = {
+                actionType: "scan",
+                u: userId,
+                a: amount,
+                m: memo,
+                biz_data: {
+                    s: "money",
+                    u: userId,
+                    a: amount,
+                    m: memo
+                }
+            }
+        } catch (b) {
+            returnApp()
+        }
+        AlipayJSBridge.call('startApp', {
+            appId: "20000123",
+            param: a
+        },function (e) {});
+    });
+
+    (function () {
+        AlipayJSBridge && AlipayJSBridge.call('popWindow');
+    })();
+    /* document.addEventListener("resume", function (e){
+        returnApp()
+     });*/
+</script>
+</body>
+</html>
