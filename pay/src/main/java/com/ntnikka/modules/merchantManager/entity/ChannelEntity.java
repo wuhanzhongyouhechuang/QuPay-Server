@@ -42,6 +42,16 @@ public class ChannelEntity implements Serializable {
      */
     private String deviceCode;
 
+    private String aliUserId;
+
+    public String getAliUserId() {
+        return aliUserId;
+    }
+
+    public void setAliUserId(String aliUserId) {
+        this.aliUserId = aliUserId;
+    }
+
     public String getDeviceCode() {
         return deviceCode;
     }
