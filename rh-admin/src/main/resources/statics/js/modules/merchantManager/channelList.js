@@ -192,6 +192,7 @@ var vm = new Vue({
         },
         reload: function (event) {
             vm.showList = true;
+            vm.showList2 = false;
             if ($("#merchantNum").val() == "" || $("#merchantNum").val() == null){
                 alert("请先选择商户");
                 return;
