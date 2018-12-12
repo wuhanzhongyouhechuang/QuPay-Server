@@ -13,7 +13,8 @@ import java.io.Serializable;
  **/
 @TableName("merchant_channel")
 public class ChannelEntity implements Serializable {
-    private static final long serialVersionUID = 1L;
+
+    private static final long serialVersionUID = -4265960008842949560L;
 
     @TableId
     private Long id;
@@ -41,6 +42,16 @@ public class ChannelEntity implements Serializable {
      * 设备编号
      */
     private String deviceCode;
+
+    private String aliUserId;
+
+    public String getAliUserId() {
+        return aliUserId;
+    }
+
+    public void setAliUserId(String aliUserId) {
+        this.aliUserId = aliUserId;
+    }
 
     public String getDeviceCode() {
         return deviceCode;

@@ -148,6 +148,15 @@ public class MerchantController extends AbstractController {
     }
 
     /**
+     * 修改通道list
+     */
+    @RequestMapping("/updatePriChannel")
+    public R updatePriChannel(@RequestBody MerchantEntity merchant) {
+        merchantService.updatePriChannel(merchant);
+        return R.ok();
+    }
+
+    /**
      * 删除
      */
     @RequestMapping("/delete")

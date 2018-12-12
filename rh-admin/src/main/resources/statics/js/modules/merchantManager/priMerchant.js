@@ -79,7 +79,8 @@ $(function () {
         colModel: [
             {label: 'ID', name: 'id', index: "id", width: 45, key: true},
             {label: '通道地址', name: 'url', sortable: false, width: 75},
-            // {label: '权重', name: 'weight', sortable: false, width: 75},//权重字段预留deviceCode
+            {label: '支付宝userId', name: 'aliUserId', sortable: false, width: 75},
+            // {label: '权重', name: 'weight', sortable: false, width: 75},//权重字段预留
             {label: '设备标识', name: 'deviceCode', sortable: false, width: 75},
             {label: '通道开关', name: 'flag', sortable: false, width: 60 , formatter: function (value, options, row) {
                     return value === 0 ?
@@ -156,7 +157,8 @@ var vm = new Vue({
         specList: [{
             url: null,
             weight: null,
-            deviceCode : null
+            deviceCode : null,
+            aliUserId : null
         }],
         specList2: [],
         merchant: {

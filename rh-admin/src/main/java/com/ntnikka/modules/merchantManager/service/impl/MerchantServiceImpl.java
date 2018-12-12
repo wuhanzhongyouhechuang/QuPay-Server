@@ -159,4 +159,14 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantDao, MerchantEntity
                 .eq("pri_flag",1)
         .in("merchant_dept_id" , idList));
     }
+
+    @Override
+    public void updatePriChannel(MerchantEntity merchantEntity) {
+        for (ChannelEntity channelEntity : merchantEntity.getChannelList()){
+            if (EmptyUtil.isEmpty(channelEntity.getId())){
+                channelEntity.setMerchantId(merchantEntity.getId());
+            }
+        }
+        channelService.batchSaveAndUpdate(merchantEntity.getChannelList());
+    }
 }

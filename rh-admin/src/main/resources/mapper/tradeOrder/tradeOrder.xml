@@ -244,17 +244,10 @@
         a.sys_trade_no AS sysTradeNo,
         a.merchant_name AS merchantName
         FROM trade_order a
-        <choose>
-            <when test="merchantdept != null and merchantdept != ''">
-                inner join merchant_dept b
-                on a.merchant_id = b.merchant_id
-                where b.parent_id = ${merchantdept}
-                and a.status = 1
-            </when>
-            <otherwise>
-                where a.status = 1
-            </otherwise>
-        </choose>
+        where a.status = 1
+        <if test="merchantdept != null and merchantdept != ''">
+            and a.merchant_dept_id = #{merchantdept}
+        </if>
         <if test="tradeid != null and tradeid != ''">
             and a.sys_trade_no = #{tradeid}
         </if>
@@ -265,10 +258,10 @@
             and a.merchant_id = #{merchantid}
         </if>
         <if test="starttime != null and starttime != ''">
-            and a.create_time &gt;= #{starttime}
+            and a.pay_time &gt;= #{starttime}
         </if>
         <if test="endtime != null and endtime != ''">
-            and a.create_time &lt;= #{endtime}
+            and a.pay_time &lt;= #{endtime}
         </if>
     </select>
 </mapper>
