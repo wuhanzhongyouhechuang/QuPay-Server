@@ -23,13 +23,11 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.net.URLEncoder;
 import java.util.Date;
 import java.util.HashMap;
@@ -57,7 +55,7 @@ public class AliPayController extends AbstractController {
     @Autowired
     private ChannelService channelService;
 
-    private static final String Ali_Request_Url = "http://admin.vcapay.com.cn:8080/pay-admin/modules/aliPayTest/aliPay.html?";
+    private static final String Ali_Request_Url = "https://ds.alipay.com/?from=mobilecodec&scheme=";
 
     private static final String Ali_Prefix = "alipays://platformapi/startapp?appId=20000067&url=";
 
@@ -231,9 +229,9 @@ public class AliPayController extends AbstractController {
                 }
             }
             if (payType.equals("alipay")){//支付宝个人码(修改转账模式 轮询userid)
-                String requestUrl = Ali_Request_Url + "userId="+aliUserId+"&amount="+aliOrderEntity.getOrderAmount()+"&mark="+aliOrderEntity.getSysTradeNo();
-                String aliUrl = Ali_Prefix + URLEncoder.encode(requestUrl,"utf-8");
-                logger.info("aliUserId : {} , 支付宝个人码地址: {}" , aliUserId , requestUrl);
+                String requestUrl = "alipayqr://platformapi/startapp?saId=10000007&qrcode=http://vcapay.com.cn/api/v1/trade?sysTradeNo="+aliOrderEntity.getSysTradeNo();
+                String aliUrl = Ali_Request_Url + URLEncoder.encode(requestUrl,"utf-8");
+                logger.info("支付宝个人码地址: {}" , requestUrl);
                 Map resultMap = new HashMap();
                 if (PayTypeEnum.WAP.getMessage().equals(aliOrderEntity.getPayType()) || PayTypeEnum.WAP.getMessage() == aliOrderEntity.getPayType()) {
                     //wap
@@ -343,7 +341,7 @@ public class AliPayController extends AbstractController {
                     }
                     //通知下游商户
                     String returnMsg = this.doNotify(aliOrderEntity.getNotifyUrl(), aliOrderEntity.getOrderId().toString(), AlipayTradeStatus.TRADE_SUCCESS.getStatus(), aliOrderEntity.getOrderAmount().toString(), aliOrderEntity.getPartner());
-                    if (returnMsg.equals("success")) {
+                    if (returnMsg.equals("success") || returnMsg.contains("success") || returnMsg.contains("SUCCESS")) {
                         logger.info("通知商户成功，修改通知状态");
                         aliOrderService.updateNotifyStatus(aliOrderEntity.getSysTradeNo());
                     } else {
@@ -706,21 +704,19 @@ public class AliPayController extends AbstractController {
             return "success验签失败";
         }
         //验签通过修改订单状态,通知商户
-        runAsync(() -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("orderId", aliOrderEntity.getSysTradeNo());
-            map.put("tradeNo", trade_no);
-            map.put("payTime", DateUtil.dtToStr(dt));
-            aliOrderService.updateTradeOrder(map);
-            //通知
-            String returnMsg = this.doNotify(aliOrderEntity.getNotifyUrl(), aliOrderEntity.getOrderId().toString(), AlipayTradeStatus.TRADE_SUCCESS.getStatus(), aliOrderEntity.getOrderAmount().toString(), aliOrderEntity.getPartner());
-            if (returnMsg.contains("success") || returnMsg.contains("SUCCESS")) {
-                logger.info("通知商户成功，修改通知状态");
-                aliOrderService.updateNotifyStatus(aliOrderEntity.getSysTradeNo());
-            } else {
-                logger.error("通知商户失败");
-            }
-        });
+        Map<String, Object> map = new HashMap<>();
+        map.put("orderId", aliOrderEntity.getSysTradeNo());
+        map.put("tradeNo", trade_no);
+        map.put("payTime", DateUtil.dtToStr(dt));
+        aliOrderService.updateTradeOrder(map);
+        //通知
+        String returnMsg = this.doNotify(aliOrderEntity.getNotifyUrl(), aliOrderEntity.getOrderId().toString(), AlipayTradeStatus.TRADE_SUCCESS.getStatus(), aliOrderEntity.getOrderAmount().toString(), aliOrderEntity.getPartner());
+        if (returnMsg.contains("success") || returnMsg.contains("SUCCESS")) {
+            logger.info("通知商户成功，修改通知状态");
+            aliOrderService.updateNotifyStatus(aliOrderEntity.getSysTradeNo());
+        } else {
+            logger.error("通知商户失败");
+        }
         return "success";
     }
 
@@ -804,4 +800,37 @@ public class AliPayController extends AbstractController {
 //        return R.ok();
 //    }
 
+    @RequestMapping(value = "trade" , method = RequestMethod.GET)
+    public void testAndriod(HttpServletResponse response , @RequestParam String sysTradeNo) throws Exception{
+        AliOrderEntity aliOrderEntity = aliOrderService.queryBySysTradeNo(sysTradeNo);
+        if (aliOrderEntity == null) {
+            logger.info("订单不存在 ， 订单系统订单号 : {}" , sysTradeNo);
+            response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/404.html");
+        }
+        MerchantEntity merchant = merchantService.queryById(aliOrderEntity.getMerchantId());
+        if (merchant == null) {
+            logger.info("商户不存在 ， 订单系统订单号 : {}" , sysTradeNo);
+            response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/404.html");
+        }
+        String mobileUrl = "";
+        Long channelId = 0L;
+        String aliUserId = "";
+        if (merchant.getPriFlag() == 0){
+            mobileUrl = merchant.getMobileUrl();
+        }else {
+            List<ChannelEntity> channelEntityList = channelService.queryUseableChannelByMerchantId(merchant.getId());
+            if (merchant.getPollingFlag() == 1){//开启轮询
+                int index = PollingUtil.RandomIndex(channelEntityList.size());
+                mobileUrl = channelEntityList.get(index).getUrl();
+                channelId = channelEntityList.get(index).getId();
+                aliUserId = channelEntityList.get(index).getAliUserId();
+            }else {//轮询关闭
+                mobileUrl = channelEntityList.get(0).getUrl();
+                channelId = channelEntityList.get(0).getId();
+                aliUserId = channelEntityList.get(0).getAliUserId();
+            }
+        }
+        logger.info("支付宝个码下单 ， 商户id : {} ， 通道Id : {} , aliUserId : {} " , merchant.getId() , channelId , aliUserId);
+        response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/modules/aliPayTest/aliPay2.html?userId="+aliUserId+"&amount="+aliOrderEntity.getOrderAmount()+"&mark="+aliOrderEntity.getSysTradeNo());
+    }
 }
