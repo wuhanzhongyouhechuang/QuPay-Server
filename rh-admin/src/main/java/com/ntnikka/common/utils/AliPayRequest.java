@@ -28,7 +28,7 @@ public class AliPayRequest {
     public static String doQrCodeAliRequest(String orderId, BigDecimal orderAmount, String productName, String appId, String privateKey, String aliPubKey, String authToken, String pid, String storeId) throws AlipayApiException {
         AlipayClient alipayClient = new DefaultAlipayClient("https://openapi.alipay.com/gateway.do", appId, privateKey, "json", AlipayConfig.input_charset, aliPubKey, AlipayConfig.sign_type_RSA2); //获得初始化的AlipayClient
         AlipayTradePrecreateRequest request = new AlipayTradePrecreateRequest();//创建API对应的request类
-        request.setNotifyUrl("http://47.92.241.14/api/v1/AliNotify");
+        request.setNotifyUrl("http://47.92.219.16/api/v1/AliNotify");
         if (StringUtils.isEmpty(storeId)) {//没有商户id
             request.setBizContent("{" +
                     "    \"out_trade_no\":\"" + orderId + "\"," +

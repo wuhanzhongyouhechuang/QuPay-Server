@@ -4,12 +4,12 @@ spring:
         driverClassName: com.mysql.jdbc.Driver
         druid:
             first:  #数据源1
-                url: jdbc:mysql://172.26.204.161:3306/backend?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false
-                username: root
+                url: jdbc:mysql://rm-8vb9gmjazcvhpes54uo.mysql.zhangbei.rds.aliyuncs.com:3306/backend?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false
+                username: admin_lq
                 password: Lq-332384114
             second:  #数据源2
-                url: jdbc:mysql://172.26.204.161:3306/backend?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false
-                username: root
+                url: jdbc:mysql://rm-8vb9gmjazcvhpes54uo.mysql.zhangbei.rds.aliyuncs.com:3306/backend?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8&useSSL=false
+                username: admin_lq
                 password: Lq-332384114
             initial-size: 10
             max-active: 100
