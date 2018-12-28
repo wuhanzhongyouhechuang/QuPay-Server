@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ntnikka.modules.merchantManager.dao.MerchantSettleDao">
+    <update id="updateSettleChannel" parameterType="map">
+        update merchant_settle_channel
+        set flag = #{flag}
+        where id = #{id}
+    </update>
+
+    <update id="closeSettleChannel" parameterType="int">
+        update  merchant_settle_channel
+        set flag = 1
+        where  id = #{settleChannelId}
+    </update>
+</mapper>

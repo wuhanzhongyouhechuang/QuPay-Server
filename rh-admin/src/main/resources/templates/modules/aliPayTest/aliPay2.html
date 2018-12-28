@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+
+<body>
+<script src="https://gw.alipayobjects.com/as/g/h5-lib/alipayjsapi/3.1.1/alipayjsapi.min.js"></script>
+<script>
+    function getQueryString(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        var r = window.location.search.substr(1).match(reg);
+        if (r != null) return unescape(r[2]);
+        return null;
+    }
+    // var thisURL=document.URL;
+    // var getval=thisURL.split('id=')[1];
+    // //alert(getval);
+    // var str=getval;
+    // var strs = new Array();
+    // strs=str.split(","); //字符分割
+
+    var old_stringify = JSON.stringify;
+    JSON.stringify = function(s) {
+        var sss= old_stringify(s);
+        if (sss.indexOf('startApp') != -1) {
+            sss = sss.replace('alipay_super_method', '20000123');
+        } else if (sss.indexOf('remoteLog') != -1) {
+            sss = "{}";
+        }
+        return sss;
+    }
+    function returnApp() {
+        AlipayJSBridge.call("exitApp")
+    }
+    function ready(a) {
+        window.AlipayJSBridge ? a && a() : document.addEventListener("AlipayJSBridgeReady", a, false);
+    }
+    ready(function () {
+        try {
+            var userId=getQueryString("userId");
+            var amount=getQueryString("amount");
+            var memo=getQueryString("mark");
+            var a = {
+                actionType: "scan",
+                u: userId,
+                a: amount,
+                m: memo,
+                biz_data: {"a":amount,"c":"","s":"online","u":userId,"m": memo}
+            }
+        } catch (b) {
+            returnApp()
+        }
+        AlipayJSBridge.call("startApp", {
+            appId: "alipay_super_method",
+            param: a
+        }, function (a) {
+        })
+    });
+    document.addEventListener("resume", function (a) {
+        returnApp()
+    });
+</script>
+</body>
+</html>

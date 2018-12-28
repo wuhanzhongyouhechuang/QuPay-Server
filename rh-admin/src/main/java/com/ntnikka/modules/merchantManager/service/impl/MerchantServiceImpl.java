@@ -161,6 +161,13 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantDao, MerchantEntity
     }
 
     @Override
+    public List<MerchantEntity> queryMerchantListNormal(List<String> idList) {
+        return this.selectList(new EntityWrapper<MerchantEntity>()
+                .eq("pri_flag",0)
+                .in("merchant_dept_id" , idList));
+    }
+
+    @Override
     public void updatePriChannel(MerchantEntity merchantEntity) {
         for (ChannelEntity channelEntity : merchantEntity.getChannelList()){
             if (EmptyUtil.isEmpty(channelEntity.getId())){

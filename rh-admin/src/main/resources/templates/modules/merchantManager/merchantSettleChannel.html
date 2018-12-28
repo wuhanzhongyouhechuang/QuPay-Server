@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>订单管理</title>
+    <#include "/header.html">
+</head>
+<body>
+<div id="rrapp" v-cloak>
+    <div v-show="showList">
+        <div class="grid-btn">
+            <div class="form-group col-sm-4">
+                <input type="text" id="merchantName" class="form-control" style="cursor:pointer;" @click="deptTree"
+                       readonly="readonly" placeholder="选择商户"/>
+                <input type="hidden" id="merchantNum" class="form-control" style="cursor:pointer;" readonly="readonly"/>
+            </div>
+            <a class="btn btn-default" @click="query">查询</a>
+            <a class="btn btn-primary" @click="audit">通道相关配置</a>
+        </div>
+        <table class="jqGridTable" id="jqGrid"></table>
+        <div id="jqGridPager"></div>
+    </div>
+    <!--详情-->
+    <div v-show="showList2" class="panel panel-default">
+        <div class="panel-heading">{{title}}</div>
+        <form class="form-horizontal">
+            <div  v-for="(item ,index) in merchantAliChannelList" :key="index">
+                <div class="form-group">
+                    <div class="col-sm-2 control-label">支付宝userId</div>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" v-model="item.aliUserId" placeholder=""/>
+                    </div>
+                    <div class="col-sm-2 control-label">分账百分比</div>
+                    <div class="col-sm-10">
+                        <!--<input type="text" class="form-control" v-model="item.amountPercent" placeholder=""/>-->
+                        <select class="form-control" v-model="item.amountPercent">
+                            <option value="0.996">千3.8费率</option>
+                            <option value="0.993">千6费率</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-2 control-label"></div>
+                <input type="button" class="btn btn-primary" @click="saveOrUpdate" value="确定"/>
+                &nbsp;&nbsp;<input type="button" class="btn btn-warning" @click="reload" value="返回"/>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- 选择部门 -->
+<div id="deptLayer" style="display: none;padding:10px;">
+    <ul id="deptTree" class="ztree"></ul>
+</div>
+<script src="${request.contextPath}/statics/js/modules/merchantManager/settleList.js?_${.now?long}"></script>
+</body>
+</html>

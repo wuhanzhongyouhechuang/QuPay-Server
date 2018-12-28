@@ -10,6 +10,7 @@ import com.alipay.api.request.*;
 import com.alipay.api.response.*;
 import com.ntnikka.modules.pay.aliPay.config.AlipayConfig;
 import com.ntnikka.modules.pay.aliPay.contorller.AliPayController;
+import com.ntnikka.modules.pay.aliPay.utils.BalanceUtil;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +52,7 @@ public class AliPayRequest {
         return response.getBody();
     }
 
-    public static String doSettleAliRequest(String appId , String privateKey , String aliPubKey , String trade_no ,BigDecimal orderAmount , String pid , String trans_in_id , String authToken) throws AlipayApiException{
+    public static String doSettleAliRequest(String appId , String privateKey , String aliPubKey , String trade_no ,BigDecimal orderAmount , String pid , String trans_in_id , String authToken , Double amountPercent) throws AlipayApiException{
         AlipayClient alipayClient = new DefaultAlipayClient("https://openapi.alipay.com/gateway.do",appId,privateKey,"json",AlipayConfig.input_charset,aliPubKey,"RSA2");
         AlipayTradeOrderSettleRequest request = new AlipayTradeOrderSettleRequest();
         String out_request_no = IdWorker.getSysTradeNumShort();
@@ -61,7 +62,7 @@ public class AliPayRequest {
                 "\"royalty_parameters\":[{" +
                 "\"trans_out\":" + pid + "," +
                 "\"trans_in\":" + trans_in_id + "," +
-                "\"amount\": " + orderAmount + "," +
+                "\"amount\": " + BalanceUtil.round(BalanceUtil.mul(orderAmount.doubleValue(),amountPercent),2) + "," +
                 "\"desc\":\"分账\"" +
                 "}]" +
                 "  }");

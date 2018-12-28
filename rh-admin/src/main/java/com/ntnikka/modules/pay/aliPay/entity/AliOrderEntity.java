@@ -1,6 +1,7 @@
 package com.ntnikka.modules.pay.aliPay.entity;
 
 import com.baomidou.mybatisplus.annotations.TableName;
+import com.ntnikka.common.utils.EmptyUtil;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -252,10 +253,10 @@ public class AliOrderEntity implements Serializable {
     }
 
     public static boolean checkParam(AliOrderEntity aliOrderEntity) {
-        if (null == aliOrderEntity.getNotifyUrl() || null == aliOrderEntity.getOrderAmount() || null == aliOrderEntity.getOrderId()
-                || null == aliOrderEntity.getMerchantId() || null == aliOrderEntity.getPayType() || null == aliOrderEntity.getVersion()
-                || null == aliOrderEntity.getSign() || null == aliOrderEntity.getSignType() || null == aliOrderEntity.getProductName()
-                || null == aliOrderEntity.getPayMethod() || "".equals(aliOrderEntity.getPayMethod()))
+        if (EmptyUtil.isEmpty(aliOrderEntity.getNotifyUrl()) || EmptyUtil.isEmpty(aliOrderEntity.getOrderAmount()) || EmptyUtil.isEmpty(aliOrderEntity.getOrderId())
+                || EmptyUtil.isEmpty(aliOrderEntity.getMerchantId()) || EmptyUtil.isEmpty(aliOrderEntity.getPayType()) || EmptyUtil.isEmpty(aliOrderEntity.getVersion())
+                || EmptyUtil.isEmpty(aliOrderEntity.getSign()) || EmptyUtil.isEmpty(aliOrderEntity.getSignType()) || EmptyUtil.isEmpty(aliOrderEntity.getProductName())
+                || EmptyUtil.isEmpty(aliOrderEntity.getPayMethod()))
             return false;
         return true;
     }

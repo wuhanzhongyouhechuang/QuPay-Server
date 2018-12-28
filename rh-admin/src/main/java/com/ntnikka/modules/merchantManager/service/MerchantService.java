@@ -48,6 +48,8 @@ public interface MerchantService extends IService<MerchantEntity> {
 
     List<MerchantEntity> queryMerchantList(List<String> idList);
 
+    List<MerchantEntity> queryMerchantListNormal(List<String> idList);
+
     void updatePriChannel(MerchantEntity merchantEntity);
 }
 

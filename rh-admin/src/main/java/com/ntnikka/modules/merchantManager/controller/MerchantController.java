@@ -9,8 +9,10 @@ import com.ntnikka.common.utils.ExcelUtil;
 import com.ntnikka.modules.merchantManager.entity.ChannelEntity;
 import com.ntnikka.modules.merchantManager.entity.MerchantDept;
 import com.ntnikka.modules.merchantManager.entity.MerchantEntity;
+import com.ntnikka.modules.merchantManager.entity.MerchantSettleChannel;
 import com.ntnikka.modules.merchantManager.service.MerchantDeptService;
 import com.ntnikka.modules.merchantManager.service.MerchantService;
+import com.ntnikka.modules.merchantManager.service.MerchantSettleService;
 import com.ntnikka.modules.orderManager.entity.TradeOrder;
 import com.ntnikka.modules.pay.aliPay.utils.MD5Utils;
 import com.ntnikka.modules.sys.controller.AbstractController;
@@ -40,6 +42,9 @@ public class MerchantController extends AbstractController {
 
     @Autowired
     private MerchantDeptService merchantDeptService;
+
+    @Autowired
+    private MerchantSettleService merchantSettleService;
 
     /**
      * 列表
@@ -86,6 +91,13 @@ public class MerchantController extends AbstractController {
     public R queryChannelInfo(@RequestParam Map<String, Object> params) {
         List<ChannelEntity> channelEntityList = merchantService.queryChannelList(Long.parseLong(params.get("merchantId").toString()));
         PageUtils pageUtils = new PageUtils(channelEntityList , channelEntityList.size() , channelEntityList.size() ,1);
+        return R.ok().put("page", pageUtils);
+    }
+
+    @RequestMapping("/settleInfo/list")
+    public R querySettleChannelInfo(@RequestParam Map<String, Object> params){
+        List<MerchantSettleChannel> merchantSettleChannelList = merchantSettleService.querySettleList(Long.parseLong(params.get("merchantId").toString()));
+        PageUtils pageUtils = new PageUtils(merchantSettleChannelList , merchantSettleChannelList.size() , merchantSettleChannelList.size() , 1);
         return R.ok().put("page", pageUtils);
     }
 
@@ -180,6 +192,20 @@ public class MerchantController extends AbstractController {
         return R.ok();
     }
 
+    @RequestMapping("/updateSettleChannelFlag")
+    public R updateSettleChannel(@RequestBody Map params){
+        int flag = 0; //默认开启
+        if (Integer.parseInt(params.get("flag").toString()) == 0) {//关闭
+            flag = 1;
+        }
+        Long id = Long.parseLong(params.get("id").toString());
+        Map paramMap = new HashMap();
+        paramMap.put("id" , id);
+        paramMap.put("flag" , flag);
+        merchantSettleService.updateSettleChannel(paramMap);
+        return R.ok();
+    }
+
     @RequestMapping("/deleteChannel")
     public R deleteChannel(@RequestBody Map params){
         Long id = Long.parseLong(params.get("id").toString());
@@ -239,6 +265,10 @@ public class MerchantController extends AbstractController {
         }
     }
 
+    /**
+     * 个人码商户
+     * @return
+     */
     @RequestMapping("/selectMerchant")
     public R selectParent() {
         String deptIdList = getUser().getMerchantDeptId() == null ? "" : getUser().getMerchantDeptId();
@@ -250,4 +280,30 @@ public class MerchantController extends AbstractController {
         return R.ok().put("merchantList", merchantEntityList);
     }
 
+    /**
+     * 普通商户
+     * @return
+     */
+    @RequestMapping("/selectMerchantNormal")
+    public R selectParentNormal() {
+        String deptIdList = getUser().getMerchantDeptId() == null ? "" : getUser().getMerchantDeptId();
+        if (EmptyUtil.isEmpty(deptIdList)){
+            return R.ok().put("merchantList" ,new ArrayList<MerchantEntity>());
+        }
+        List<String> idList = Arrays.asList(deptIdList.split(","));
+        List<MerchantEntity> merchantEntityList = merchantService.queryMerchantListNormal(idList);
+        return R.ok().put("merchantList", merchantEntityList);
+    }
+
+    @RequestMapping("saveOrUpdateSettleChannel")
+    public R saveOrUpdateSettleChannel(@RequestBody List<MerchantSettleChannel> merchantSettleChannelList){
+        merchantSettleService.saveOrUpdateSettleChannel(merchantSettleChannelList);
+        return R.ok();
+    }
+
+    @RequestMapping("settleInfo/{merchantId}")
+    public R settleInfo(@PathVariable("merchantId") Long merchantId){
+        List<MerchantSettleChannel> merchantSettleChannelList = merchantSettleService.querySettleList(merchantId);
+        return R.ok().put("list",merchantSettleChannelList);
+    }
 }

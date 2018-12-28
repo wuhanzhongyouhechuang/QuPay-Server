@@ -29,8 +29,8 @@ $(function () {
                 label: '分账开关', name: 'settleFlag', width: 65,
                 formatter: function (value, options, row) {
                     return value === 0 ?
-                        '<span class="label label-success pointer" onclick="vm.updateSettleStatus(\'' + value + '\',\'' + row.id + '\')">关闭分账</span>' :
-                        '<span class="label label-danger pointer" onclick="vm.updateSettleStatus(\'' + value + '\',\'' + row.id + '\')">开启分账</span>';
+                        '<span class="label label-success pointer" onclick="vm.updateSettleStatus(\'' + value + '\',\'' + row.id + '\')">关闭分账</span><span class="label label-success pointer" onclick="vm.showSetting(\'' + row.id + '\')">分账账号设置</span>' :
+                        '<span class="label label-danger pointer" onclick="vm.updateSettleStatus(\'' + value + '\',\'' + row.id + '\')">开启分账</span><span class="label label-success pointer" onclick="vm.showSetting(\'' + row.id + '\')">分账账号设置</span>';
                 }
             },
             {
@@ -92,6 +92,7 @@ var vm = new Vue({
         showList: true,
         showList2: false,
         showList3: false,
+        showList4:false,
         title: null,
         roleList: {},
         user: {
@@ -118,11 +119,61 @@ var vm = new Vue({
             wechantKey: null,
             settleId : null,
             settleIdOut : null
-        }
+        },
+        merchantIdTmp : null,
+        merchantAliChannelList: [{
+            id: null,
+            aliUserId: null,
+            amountPercent: null,
+            merchantId: null
+        }],
+        merchantAliChannelList2: []
     },
     methods: {
         query: function () {
             vm.reload();
+        },
+        showSetting: function(merchantId) {
+            vm.showList = false;
+            vm.showList2 = false;
+            vm.showList3 = false;
+            vm.showList4 = true;
+            vm.merchantIdTmp = merchantId;
+            $.get(baseURL + "merchant/mgr/settleInfo/" + merchantId, function (r) {
+                if (r.list.length != 0){
+                    vm.merchantAliChannelList = r.list;
+                }else {
+                    vm.merchantAliChannelList[0].merchantId = merchantId;
+                }
+            });
+        },
+        addSpecUpdate: function(){
+            var data={};
+            data.aliUserId = null;
+            data.amountPercent = null ;
+            data.merchantId = vm.merchantIdTmp;
+            vm.merchantAliChannelList2.push(data);
+        },
+        delSpecUpdate: function(index,item){
+            vm.merchantAliChannelList2.splice(index,1);
+        },
+        saveOrUpdateSettleChannel: function(){
+            var url = "merchant/mgr/saveOrUpdateSettleChannel" ;
+            $.ajax({
+                type: "POST",
+                url: baseURL + url,
+                contentType: "application/json",
+                data: JSON.stringify(vm.merchantAliChannelList.concat(vm.merchantAliChannelList2)),
+                success: function (r) {
+                    if (r.code === 0) {
+                        alert('操作成功', function () {
+                            vm.reload();
+                        });
+                    } else {
+                        alert(r.msg);
+                    }
+                }
+            });
         },
         loadAppIdSelect: function () {
             $("select[name='appidSelect']").empty();
@@ -132,7 +183,7 @@ var vm = new Vue({
                 contentType: "application/json",
                 success: function (r) {
                     if (r.code == 0) {
-                        console.log(r.appId);
+                        // console.log(r.appId);
                         for (var i = 0; i < r.appId.length; i++) {
                             $("select[name='appidSelect']").append("<option value='" + r.appId[i] + "'>" + r.appId[i] + "</option>");
                         }
@@ -143,7 +194,7 @@ var vm = new Vue({
             });
         },
         changeType: function (ele) {
-            console.log("---->select onchange function");
+            // console.log("---->select onchange function");
             var optionTxt = $(ele.target).find("option:selected").text();
             var optionVal = ele.target.value;
             var param = {"appid": optionVal};
@@ -370,6 +421,14 @@ var vm = new Vue({
             vm.showList = true;
             vm.showList2 = false;
             vm.showList3 = false;
+            vm.showList4 = false;
+            vm.merchantAliChannelList = [{
+                id: null,
+                aliUserId: null,
+                amountPercent: null,
+                merchantId: null
+            }];
+            vm.merchantAliChannelList2= [];
             var page = $("#jqGrid").jqGrid('getGridParam', 'page');
             $("#jqGrid").jqGrid('setGridParam', {
                 postData: {'id': vm.merchant.id , 'merchantName' : vm.merchant.merchantName , 'merchantDeptName': vm.merchant.merchantDeptName},

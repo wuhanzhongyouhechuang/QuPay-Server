@@ -10,8 +10,10 @@ import com.ntnikka.common.Enum.PayTypeEnum;
 import com.ntnikka.common.utils.*;
 import com.ntnikka.modules.merchantManager.entity.ChannelEntity;
 import com.ntnikka.modules.merchantManager.entity.MerchantEntity;
+import com.ntnikka.modules.merchantManager.entity.MerchantSettleChannel;
 import com.ntnikka.modules.merchantManager.service.ChannelService;
 import com.ntnikka.modules.merchantManager.service.MerchantService;
+import com.ntnikka.modules.merchantManager.service.MerchantSettleService;
 import com.ntnikka.modules.pay.aliPay.config.AlipayConfig;
 import com.ntnikka.modules.pay.aliPay.config.WechatConfig;
 import com.ntnikka.modules.pay.aliPay.entity.AliNotifyEntity;
@@ -62,6 +64,9 @@ public class AliPayController extends AbstractController {
 
     @Autowired
     private ChannelService channelService;
+
+    @Autowired
+    private MerchantSettleService merchantSettleService;
 
     private static final String Ali_Request_Url = "https://ds.alipay.com/?from=mobilecodec&scheme=";
 
@@ -334,37 +339,27 @@ public class AliPayController extends AbstractController {
                     logger.info("支付成功，支付时间 : {}", params.get("gmt_payment"));
                     map.put("payTime", DateUtil.string2Date(params.get("gmt_payment")));
                     aliOrderService.updateTradeOrder(map);
-                    //回调入库
-//                    AliNotifyEntity aliNotifyEntity = new AliNotifyEntity();
-//                    aliNotifyEntity.setOutTradeNo(params.get("out_trade_no"));
-//                    aliNotifyEntity.setTradeNo(params.get("trade_no"));
-//                    aliNotifyEntity.setAppId(params.get("app_id"));
-//                    aliNotifyEntity.setBuyerId(params.get("buyer_id"));
-//                    aliNotifyEntity.setTradeStatus(params.get("trade_status"));
-//                    aliNotifyEntity.setTotalAmount(new BigDecimal(params.get("total_amount")));
-//                    aliNotifyEntity.setReceiptAmount(new BigDecimal(params.get("receipt_amount")));
-//                    aliNotifyEntity.setBuyerPayAmount(new BigDecimal(params.get("buyer_pay_amount")));
-//                    aliNotifyEntity.setSubject(params.get("subject"));
-//                    aliNotifyEntity.setGmtCreate(DateUtil.string2Date(params.get("gmt_create")));
-//                    aliNotifyEntity.setCreatedAt(new Date());
-//                    aliNotifyEntity.setUpdatedAt(new Date());
-//                    aliNotifyService.save(aliNotifyEntity);
                     //分账
-                    if (merchantEntity.getSettleFlag() == 0 && EmptyUtil.isNotEmpty(merchantEntity.getSettleId()) && EmptyUtil.isNotEmpty(merchantEntity.getSettleIdOut())) {
-                        String result = AliPayRequest.doSettleAliRequest(merchantEntity.getAppid().toString(), merchantEntity.getMerchantPriKey(), merchantEntity.getAliPubKey(), params.get("trade_no"), aliOrderEntity.getOrderAmount(), merchantEntity.getSettleIdOut(), merchantEntity.getSettleId(), merchantEntity.getAuthCode());
-                        JSONObject resultJson = JSON.parseObject(result).getJSONObject("alipay_trade_order_settle_response");
-                        if (resultJson.getInteger("code") != 10000) {
-                            logger.info("分账请求失败 ， 请求返回 : 错误码 , {} , 信息 , {}", resultJson.getString("sub_code"), resultJson.getString("sub_msg"));
-                            // TODO: 2018/11/26 如果分账账户被风控 修改settleFlag 后续此商户不再走分账
-                            if (resultJson.getInteger("code") == 40004){
-                                logger.info("分账账户异常 , 暂时关闭此商户分账功能");
-                                Map<String, Object> paramMap = new HashMap();
-                                paramMap.put("merchantId", merchantEntity.getId());
-                                paramMap.put("settleStatus", 1);
-                                merchantService.updateSettleStatus(paramMap);
+                    if (merchantEntity.getSettleFlag() == 0) { //开启分账
+                        //是否有可用分账通道
+                        List<MerchantSettleChannel> merchantSettleChannelList = merchantSettleService.queryUseableSettleList(merchantEntity.getId());
+                        if (EmptyUtil.isNotEmpty(merchantSettleChannelList)) {
+                            int index = PollingUtil.RandomIndex(merchantSettleChannelList.size());//随机轮询可用通道
+                            Double amountPercent = merchantSettleChannelList.get(index).getAmountPercent();
+                            String transInAliUserId = merchantSettleChannelList.get(index).getAliUserId();
+                            String result = AliPayRequest.doSettleAliRequest(merchantEntity.getAppid().toString(), merchantEntity.getMerchantPriKey(), merchantEntity.getAliPubKey(), params.get("trade_no"), aliOrderEntity.getOrderAmount(), merchantEntity.getSettleIdOut(), transInAliUserId, merchantEntity.getAuthCode() ,amountPercent);
+                            JSONObject resultJson = JSON.parseObject(result).getJSONObject("alipay_trade_order_settle_response");
+                            if (resultJson.getInteger("code") != 10000) {
+                                logger.info("分账请求失败 ， 请求返回 : 错误码 , {} , 信息 , {}", resultJson.getString("sub_code"), resultJson.getString("sub_msg"));
+                                if (resultJson.getInteger("code") == 40004) {
+                                    logger.info("分账账户异常 , 暂时关闭此分账通道 ，通道ID : {} ，通道aliUserId : {}" ,merchantSettleChannelList.get(index).getId(),merchantSettleChannelList.get(index).getAliUserId());
+                                }
+                                merchantSettleService.closeSettleChannel(merchantSettleChannelList.get(index).getId());
+                            } else {
+                                logger.info("分账请求成功");
                             }
-                        } else {
-                            logger.info("分账请求成功");
+                        }else {
+                            logger.info("商户 {} , 无可用分账通道" , merchantEntity.getId());
                         }
                     }
                     //通知下游商户
@@ -817,20 +812,20 @@ public class AliPayController extends AbstractController {
 
     @RequestMapping(value = "testSettle")
     public R testSettleAliPay() throws AlipayApiException{
-        String appid = "2018092661497515" ;
-        String priKey = "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCKypEvW4Zb5eTdo6Hno915NzpO5umBAFEn4mEy4drURjlziFLCWU7JkHLh2rB5m43IcxssNfWwU9st8M3z2GMmySv69uSp88+osTnUmTXFGUNFA95pelPnzumpaIMtJv8BzKsMFqH8186GPzqLuv1DkQCun/OmB02ibcbewXqd7efH7h/3NsgFpruRzEOdjyANZiUBZjEIB9LruUEL6E7HAa5vrjy3CO4h5FQO3tNF13gHbG+FaQYBN0lHtSgQ7uCl21CHbPCLrjTsEACCtgcWjIRjlqfwtPJkn3pkZEKtaXIIUMMCcK3cgoLoItlGV1EZxLCguCHFeIPGk7xNIYBPAgMBAAECggEATmWr6t89Hs3WIGgcvTavlJfgpM8EWOzv6qKSGua+8CcWrq7zaHp/6ZVhfzhDdP2r8e0rDScRt982MFYUT8gMAc2ivSkW8vUYeIZbTz6Xw9TITcSorlX97TPQgvPZHPkpFEAi4joqmCLisqwmiuU9yBuxEfKh80euz7BIpG0PsQLrc369Np7d8WsHgw6B3GzC3TE4mn2gvwbFY9nUraWwRMxJpzb8LBsewE38zjM0p5k5uM2wLfsNE24ltW5FyRkIA01PQZ8v30t/vlGBYntMNnl8NLAi4PsENKbyBm98DvUdFd6d3rBM9xyrJszBKSbX9iVxn7p7X0SMggk4PX3dOQKBgQC+Rtzxs8/ZbmnG7hrcUp08YiMyFBwsn9ZUWUWJCR7230SB0fkZqzIQOApey7jzy0nkB3p7Qk18AiHyeHFsCo2fQDE4nyvVWw0QlD2jV6mOWluvv6Vth6OcrV5aj+AO5I8jcC2KBXqwOcOIEz54TdEddJvD7YUo9bqvVrDr3K1pNQKBgQC6ux7MkUE2MMX2n6BpujkBRiT449PKWtmaqHLCxJSJyExAB+qRu6WN6d+7S+AD0gFvnGVEnTTQd7Th8V1JBtZr+QWSq1j9DKj6EFJwSEZ3TF1Krz1ZPsftSgZtziFIDOtmyMvSMixpAf5wuLg0JWJaCE183QzYx/8yCFLFqQN38wKBgQCRb/6/bI5phqCpYiP71dXDasu2InLqlP2xGU8yEFuvnTZy+DirqxQoG32puZPUHMWM2z5+ak5phAPIntErIOHhIKK+wcMyYFcbHgQDDyVV3rEII7dhgfTH9CgTlrdPCtpx3vOf9NIzUuOm5faw4+H73r6Uwr8ucKzSCrROhC20JQKBgA5JPqP8APc6aArkT4uHOdFFIpMAKzXyGW/hr1YDYDHiZyMG+AVKS/I9kGZt+aeRK5b0ajMDrAS/A9G9e5uYsFL2bFy6S0ag71SiZww8G1gJOaH7IkBvszAOV8uS160BgAkPF7jvKcKm6maJW15x9cJZnEQPTWpQcs/LHzoMIj3NAoGBAL4Mz3KJPC6f7GocmWoYCOFnNQ/Yk2UBkpQSskc7jQc2//dVZZb0VnwbbE4utI+zoBOkgD3GEbFXPvfbc6aFoQJdJwdLeAFFScFnoAT2iUBwnqNcOnsLrPdQCvu2XIN1TTjM5ITDZPoD1oAiEBWzaZUGp14jdHjT9tUDBj0IyBFR";
-        String aliPubKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiX+NpQ9NKbbvK3pjMM/mcRynbLulsE9A8o8SUU3DVfF9EXpLxDnXIZgvnNcaVJXMXZOqXrAn5RgL1evBCAYJz7+Q7c3JjU9ODOlSzOFP8zG2ZL7d4Kz7wKGh4M4H/fhMFvfwXjWTHMjgrtQwkRvddQ7zV5IkT693HsFJG3/HTULAVMvTiBZi/N8GlwQ9IaqPLnzuS7wAYUlucxT16AZPFdbZdhrR0MdIpaGr4RMfZfQNtSwt/owsOIV8LhSswfcicUxziDzWujYFnSZrkfBzagytvgL12INTqZTx7bWf+siYnWZiTqvpkb82HiJgyqF7d1HyF+vejKMcDzIXfYOk4wIDAQAB";
-        String tradeNo = "2018112622001461735418452773";
-        String authCode = "201809BB65a2e459ae0648d6a5da8af241866X35";
-        String seller_id = "2088331521887406";//收账支付宝id
-        AliOrderEntity aliOrderEntity = aliOrderService.queryBySysTradeNo("36900020181126133217000907879441");
-        String result = AliPayRequest.doSettleAliRequest(appid, priKey, aliPubKey , tradeNo , aliOrderEntity.getOrderAmount() , seller_id, "2088231302650132", authCode);
-        JSONObject resultJson = JSON.parseObject(result).getJSONObject("alipay_trade_order_settle_response");
-        if (resultJson.getInteger("code") != 10000) {
-            logger.info("分账请求失败 ， 请求返回 : 错误码 , {} , 信息 , {}", resultJson.getString("sub_code"), resultJson.getString("sub_msg"));
-        } else {
-            logger.info("分账请求成功");
-        }
+//        String appid = "2018092661497515" ;
+////        String priKey = "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCKypEvW4Zb5eTdo6Hno915NzpO5umBAFEn4mEy4drURjlziFLCWU7JkHLh2rB5m43IcxssNfWwU9st8M3z2GMmySv69uSp88+osTnUmTXFGUNFA95pelPnzumpaIMtJv8BzKsMFqH8186GPzqLuv1DkQCun/OmB02ibcbewXqd7efH7h/3NsgFpruRzEOdjyANZiUBZjEIB9LruUEL6E7HAa5vrjy3CO4h5FQO3tNF13gHbG+FaQYBN0lHtSgQ7uCl21CHbPCLrjTsEACCtgcWjIRjlqfwtPJkn3pkZEKtaXIIUMMCcK3cgoLoItlGV1EZxLCguCHFeIPGk7xNIYBPAgMBAAECggEATmWr6t89Hs3WIGgcvTavlJfgpM8EWOzv6qKSGua+8CcWrq7zaHp/6ZVhfzhDdP2r8e0rDScRt982MFYUT8gMAc2ivSkW8vUYeIZbTz6Xw9TITcSorlX97TPQgvPZHPkpFEAi4joqmCLisqwmiuU9yBuxEfKh80euz7BIpG0PsQLrc369Np7d8WsHgw6B3GzC3TE4mn2gvwbFY9nUraWwRMxJpzb8LBsewE38zjM0p5k5uM2wLfsNE24ltW5FyRkIA01PQZ8v30t/vlGBYntMNnl8NLAi4PsENKbyBm98DvUdFd6d3rBM9xyrJszBKSbX9iVxn7p7X0SMggk4PX3dOQKBgQC+Rtzxs8/ZbmnG7hrcUp08YiMyFBwsn9ZUWUWJCR7230SB0fkZqzIQOApey7jzy0nkB3p7Qk18AiHyeHFsCo2fQDE4nyvVWw0QlD2jV6mOWluvv6Vth6OcrV5aj+AO5I8jcC2KBXqwOcOIEz54TdEddJvD7YUo9bqvVrDr3K1pNQKBgQC6ux7MkUE2MMX2n6BpujkBRiT449PKWtmaqHLCxJSJyExAB+qRu6WN6d+7S+AD0gFvnGVEnTTQd7Th8V1JBtZr+QWSq1j9DKj6EFJwSEZ3TF1Krz1ZPsftSgZtziFIDOtmyMvSMixpAf5wuLg0JWJaCE183QzYx/8yCFLFqQN38wKBgQCRb/6/bI5phqCpYiP71dXDasu2InLqlP2xGU8yEFuvnTZy+DirqxQoG32puZPUHMWM2z5+ak5phAPIntErIOHhIKK+wcMyYFcbHgQDDyVV3rEII7dhgfTH9CgTlrdPCtpx3vOf9NIzUuOm5faw4+H73r6Uwr8ucKzSCrROhC20JQKBgA5JPqP8APc6aArkT4uHOdFFIpMAKzXyGW/hr1YDYDHiZyMG+AVKS/I9kGZt+aeRK5b0ajMDrAS/A9G9e5uYsFL2bFy6S0ag71SiZww8G1gJOaH7IkBvszAOV8uS160BgAkPF7jvKcKm6maJW15x9cJZnEQPTWpQcs/LHzoMIj3NAoGBAL4Mz3KJPC6f7GocmWoYCOFnNQ/Yk2UBkpQSskc7jQc2//dVZZb0VnwbbE4utI+zoBOkgD3GEbFXPvfbc6aFoQJdJwdLeAFFScFnoAT2iUBwnqNcOnsLrPdQCvu2XIN1TTjM5ITDZPoD1oAiEBWzaZUGp14jdHjT9tUDBj0IyBFR";
+////        String aliPubKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiX+NpQ9NKbbvK3pjMM/mcRynbLulsE9A8o8SUU3DVfF9EXpLxDnXIZgvnNcaVJXMXZOqXrAn5RgL1evBCAYJz7+Q7c3JjU9ODOlSzOFP8zG2ZL7d4Kz7wKGh4M4H/fhMFvfwXjWTHMjgrtQwkRvddQ7zV5IkT693HsFJG3/HTULAVMvTiBZi/N8GlwQ9IaqPLnzuS7wAYUlucxT16AZPFdbZdhrR0MdIpaGr4RMfZfQNtSwt/owsOIV8LhSswfcicUxziDzWujYFnSZrkfBzagytvgL12INTqZTx7bWf+siYnWZiTqvpkb82HiJgyqF7d1HyF+vejKMcDzIXfYOk4wIDAQAB";
+////        String tradeNo = "2018112622001461735418452773";
+////        String authCode = "201809BB65a2e459ae0648d6a5da8af241866X35";
+////        String seller_id = "2088331521887406";//收账支付宝id
+////        AliOrderEntity aliOrderEntity = aliOrderService.queryBySysTradeNo("36900020181126133217000907879441");
+////        String result = AliPayRequest.doSettleAliRequest(appid, priKey, aliPubKey , tradeNo , aliOrderEntity.getOrderAmount() , seller_id, "2088231302650132", authCode);
+////        JSONObject resultJson = JSON.parseObject(result).getJSONObject("alipay_trade_order_settle_response");
+////        if (resultJson.getInteger("code") != 10000) {
+////            logger.info("分账请求失败 ， 请求返回 : 错误码 , {} , 信息 , {}", resultJson.getString("sub_code"), resultJson.getString("sub_msg"));
+////        } else {
+////            logger.info("分账请求成功");
+////        }
         return R.ok();
     }
 
