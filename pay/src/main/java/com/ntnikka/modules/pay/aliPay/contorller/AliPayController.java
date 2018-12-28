@@ -10,8 +10,10 @@ import com.ntnikka.modules.common.Enum.PayTypeEnum;
 import com.ntnikka.modules.common.utils.*;
 import com.ntnikka.modules.merchantManager.entity.ChannelEntity;
 import com.ntnikka.modules.merchantManager.entity.MerchantEntity;
+import com.ntnikka.modules.merchantManager.entity.MerchantSettleChannel;
 import com.ntnikka.modules.merchantManager.service.ChannelService;
 import com.ntnikka.modules.merchantManager.service.MerchantService;
+import com.ntnikka.modules.merchantManager.service.MerchantSettleService;
 import com.ntnikka.modules.pay.aliPay.config.AlipayConfig;
 import com.ntnikka.modules.pay.aliPay.entity.AliOrderEntity;
 import com.ntnikka.modules.pay.aliPay.entity.TradeQueryParam;
@@ -54,6 +56,9 @@ public class AliPayController extends AbstractController {
 
     @Autowired
     private ChannelService channelService;
+
+    @Autowired
+    private MerchantSettleService merchantSettleService;
 
     private static final String Ali_Request_Url = "https://ds.alipay.com/?from=mobilecodec&scheme=";
 
@@ -326,17 +331,26 @@ public class AliPayController extends AbstractController {
                     map.put("payTime", DateUtil.string2Date(params.get("gmt_payment")));
                     aliOrderService.updateTradeOrder(map);
                     //分账
-                    if (merchantEntity.getSettleFlag() == 0 && EmptyUtil.isNotEmpty(merchantEntity.getSettleId()) && EmptyUtil.isNotEmpty(merchantEntity.getSettleIdOut())) {
-                        String result = AliPayRequest.doSettleAliRequest(merchantEntity.getAppid().toString(), merchantEntity.getMerchantPriKey(), merchantEntity.getAliPubKey(), params.get("trade_no"), aliOrderEntity.getOrderAmount(), merchantEntity.getSettleIdOut(), merchantEntity.getSettleId(), merchantEntity.getAuthCode());
-                        JSONObject resultJson = JSON.parseObject(result).getJSONObject("alipay_trade_order_settle_response");
-                        if (resultJson.getInteger("code") != 10000) {
-                            logger.info("分账请求失败 ， 请求返回 : 错误码 , {} , 信息 , {}", resultJson.getString("sub_code"), resultJson.getString("sub_msg"));
-                            if (resultJson.getInteger("code") == 40004){
-                                logger.info("分账账户异常 , 暂时关闭此商户交易功能");
-                                merchantService.closeTradeStatus(merchantEntity.getId());
+                    if (merchantEntity.getSettleFlag() == 0) { //开启分账
+                        //是否有可用分账通道
+                        List<MerchantSettleChannel> merchantSettleChannelList = merchantSettleService.queryUseableSettleList(merchantEntity.getId());
+                        if (EmptyUtil.isNotEmpty(merchantSettleChannelList)) {
+                            int index = PollingUtil.RandomIndex(merchantSettleChannelList.size());//随机轮询可用通道
+                            Double amountPercent = merchantSettleChannelList.get(index).getAmountPercent();
+                            String transInAliUserId = merchantSettleChannelList.get(index).getAliUserId();
+                            String result = AliPayRequest.doSettleAliRequest(merchantEntity.getAppid().toString(), merchantEntity.getMerchantPriKey(), merchantEntity.getAliPubKey(), params.get("trade_no"), aliOrderEntity.getOrderAmount(), merchantEntity.getSettleIdOut(), transInAliUserId, merchantEntity.getAuthCode() ,amountPercent);
+                            JSONObject resultJson = JSON.parseObject(result).getJSONObject("alipay_trade_order_settle_response");
+                            if (resultJson.getInteger("code") != 10000) {
+                                logger.info("分账请求失败 ， 请求返回 : 错误码 , {} , 信息 , {}", resultJson.getString("sub_code"), resultJson.getString("sub_msg"));
+                                if (resultJson.getInteger("code") == 40004) {
+                                    logger.info("分账账户异常 , 暂时关闭此分账通道 ，通道ID : {} ，通道aliUserId : {}" ,merchantSettleChannelList.get(index).getId(),merchantSettleChannelList.get(index).getAliUserId());
+                                }
+                                merchantSettleService.closeSettleChannel(merchantSettleChannelList.get(index).getId());
+                            } else {
+                                logger.info("分账请求成功");
                             }
-                        } else {
-                            logger.info("分账请求成功");
+                        }else {
+                            logger.info("商户 {} , 无可用分账通道" , merchantEntity.getId());
                         }
                     }
                     //通知下游商户
