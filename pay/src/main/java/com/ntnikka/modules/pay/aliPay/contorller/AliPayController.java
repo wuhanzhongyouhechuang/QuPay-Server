@@ -226,59 +226,40 @@ public class AliPayController extends AbstractController {
                     int index = PollingUtil.RandomIndex(channelEntityList.size());
                     mobileUrl = channelEntityList.get(index).getUrl();
                     channelId = channelEntityList.get(index).getId();
-                    aliUserId = channelEntityList.get(index).getAliUserId();
+                    //aliUserId = channelEntityList.get(index).getAliUserId();
                 }else {//轮询关闭
                     mobileUrl = channelEntityList.get(0).getUrl();
                     channelId = channelEntityList.get(0).getId();
-                    aliUserId = channelEntityList.get(0).getAliUserId();
+                    //aliUserId = channelEntityList.get(0).getAliUserId();
                 }
             }
-            if (payType.equals("alipay")){//支付宝个人码(修改转账模式 轮询userid)
-                String requestUrl = "alipayqr://platformapi/startapp?saId=10000007&qrcode=http://vcapay.com.cn/api/v1/trade?sysTradeNo="+aliOrderEntity.getSysTradeNo();
-                String aliUrl = Ali_Request_Url + URLEncoder.encode(requestUrl,"utf-8");
-                logger.info("支付宝个人码地址: {}" , requestUrl);
-                Map resultMap = new HashMap();
+            String result = MobileRequest.createOrderMobile(mobileUrl, aliOrderEntity.getOrderAmount(), aliOrderEntity.getSysTradeNo(), payType);
+            if (EmptyUtil.isEmpty(result)){
+                logger.info("个人码通道无返回 ，下单失败");
+                if (merchant.getPriFlag() == 1){
+                    logger.info("个人码手机通道无返回  , 暂时关闭通道 ，请检查通道 : {} , 通道ID : {}" , merchant.getId(),channelId);
+                    merchantService.closeChannel(channelId);
+                }
+                return R.error(405000, "个人码通道无返回 ，请检查相关配置");
+            }
+            JSONObject resultJson = JSON.parseObject(result);
+            Map resultMap = new HashMap();
+            if (resultJson.getString("msg").contains("获取成功")) {
                 if (PayTypeEnum.WAP.getMessage().equals(aliOrderEntity.getPayType()) || PayTypeEnum.WAP.getMessage() == aliOrderEntity.getPayType()) {
                     //wap
-                    resultMap.put("out_trade_no", aliOrderEntity.getSysTradeNo());
-                    resultMap.put("qr_code", aliUrl);
+                    resultMap.put("out_trade_no", resultJson.getString("mark"));
+                    resultMap.put("qr_code", resultJson.getString("payurl"));
                     return R.ok().put("data", resultMap);
                 } else {
                     //qrcode
-                    String imgStr = ImageToBase64Util.createQRCode(aliUrl);
-                    resultMap.put("out_trade_no", aliOrderEntity.getSysTradeNo());
+                    String imgStr = ImageToBase64Util.createQRCode(resultJson.getString("payurl"));
+                    resultMap.put("out_trade_no", resultJson.getString("mark"));
                     resultMap.put("qr_code", imgStr);
                     return R.ok().put("data", resultMap);
                 }
-            }else {//微信个人码
-                String result = MobileRequest.createOrderMobile(mobileUrl, aliOrderEntity.getOrderAmount(), aliOrderEntity.getSysTradeNo(), payType);
-                if (EmptyUtil.isEmpty(result)){
-                    logger.info("个人码通道无返回 ，下单失败");
-                    if (merchant.getPriFlag() == 1){
-                        logger.info("个人码手机通道无返回  , 暂时关闭通道 ，请检查通道 : {} , 通道ID : {}" , merchant.getId(),channelId);
-                        merchantService.closeChannel(channelId);
-                    }
-                    return R.error(405000, "个人码通道无返回 ，请检查相关配置");
-                }
-                JSONObject resultJson = JSON.parseObject(result);
-                Map resultMap = new HashMap();
-                if (resultJson.getString("msg").contains("获取成功")) {
-                    if (PayTypeEnum.WAP.getMessage().equals(aliOrderEntity.getPayType()) || PayTypeEnum.WAP.getMessage() == aliOrderEntity.getPayType()) {
-                        //wap
-                        resultMap.put("out_trade_no", resultJson.getString("mark"));
-                        resultMap.put("qr_code", resultJson.getString("payurl"));
-                        return R.ok().put("data", resultMap);
-                    } else {
-                        //qrcode
-                        String imgStr = ImageToBase64Util.createQRCode(resultJson.getString("payurl"));
-                        resultMap.put("out_trade_no", resultJson.getString("mark"));
-                        resultMap.put("qr_code", imgStr);
-                        return R.ok().put("data", resultMap);
-                    }
-                } else {
-                    logger.error("获取个人码失败 ， msg : {}", resultJson.getString("msg"));
-                    return R.error(406000, "获取个人码失败");
-                }
+            } else {
+                logger.error("获取个人码失败 ， msg : {}", resultJson.getString("msg"));
+                return R.error(406000, "获取个人码失败");
             }
         }
         //二维码支付
