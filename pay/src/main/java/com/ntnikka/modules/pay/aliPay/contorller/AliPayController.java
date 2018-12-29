@@ -279,7 +279,7 @@ public class AliPayController extends AbstractController {
     }
 
     @RequestMapping(value = "/AliNotify", method = RequestMethod.POST)
-    public String NotifyController(HttpServletRequest request) {
+    public String NotifyController(HttpServletRequest request) throws Exception{
         //用户支付后 接受支付宝回调 处理业务逻辑 通知下游商户
         Map<String, String> params = AliUtils.convertRequestParamsToMap(request); // 将异步通知中收到的待验证所有参数都存放到map中
         String paramsJson = JSON.toJSONString(params);
@@ -313,25 +313,9 @@ public class AliPayController extends AbstractController {
                     aliOrderService.updateTradeOrder(map);
                     //分账
                     if (merchantEntity.getSettleFlag() == 0) { //开启分账
-                        //是否有可用分账通道
-                        List<MerchantSettleChannel> merchantSettleChannelList = merchantSettleService.queryUseableSettleList(merchantEntity.getId());
-                        if (EmptyUtil.isNotEmpty(merchantSettleChannelList)) {
-                            int index = PollingUtil.RandomIndex(merchantSettleChannelList.size());//随机轮询可用通道
-                            Double amountPercent = merchantSettleChannelList.get(index).getAmountPercent();
-                            String transInAliUserId = merchantSettleChannelList.get(index).getAliUserId();
-                            String result = AliPayRequest.doSettleAliRequest(merchantEntity.getAppid().toString(), merchantEntity.getMerchantPriKey(), merchantEntity.getAliPubKey(), params.get("trade_no"), aliOrderEntity.getOrderAmount(), merchantEntity.getSettleIdOut(), transInAliUserId, merchantEntity.getAuthCode() ,amountPercent);
-                            JSONObject resultJson = JSON.parseObject(result).getJSONObject("alipay_trade_order_settle_response");
-                            if (resultJson.getInteger("code") != 10000) {
-                                logger.info("分账请求失败 ， 请求返回 : 错误码 , {} , 信息 , {}", resultJson.getString("sub_code"), resultJson.getString("sub_msg"));
-                                if (resultJson.getInteger("code") == 40004) {
-                                    logger.info("分账账户异常 , 暂时关闭此分账通道 ，通道ID : {} ，通道aliUserId : {}" ,merchantSettleChannelList.get(index).getId(),merchantSettleChannelList.get(index).getAliUserId());
-                                }
-                                merchantSettleService.closeSettleChannel(merchantSettleChannelList.get(index).getId());
-                            } else {
-                                logger.info("分账请求成功");
-                            }
-                        }else {
-                            logger.info("商户 {} , 无可用分账通道" , merchantEntity.getId());
+                        Boolean settleFlag = this.trySettle(merchantEntity,aliOrderEntity,params);
+                        if (!settleFlag){//分账失败 关闭商户交易权限
+                            merchantService.closeTradeFlag(merchantEntity.getId());
                         }
                     }
                     //通知下游商户
@@ -355,6 +339,37 @@ public class AliPayController extends AbstractController {
         } catch (AlipayApiException e) {
             logger.error("支付宝回调签名认证失败,paramsJson:{},errorMsg:{}", paramsJson, e.getMessage());
             return "failure";
+        }
+    }
+
+    private Boolean trySettle( MerchantEntity merchantEntity , AliOrderEntity aliOrderEntity , Map<String ,String> params) throws Exception{
+        //是否有可用分账通道
+        Boolean flag = false;
+        List<MerchantSettleChannel> merchantSettleChannelList = merchantSettleService.queryUseableSettleList(merchantEntity.getId());
+        if (EmptyUtil.isNotEmpty(merchantSettleChannelList)) {
+            int index = PollingUtil.RandomIndex(merchantSettleChannelList.size());//随机轮询可用通道
+            Double amountPercent = merchantSettleChannelList.get(index).getAmountPercent();
+            String transInAliUserId = merchantSettleChannelList.get(index).getAliUserId();
+            String result = AliPayRequest.doSettleAliRequest(merchantEntity.getAppid().toString(), merchantEntity.getMerchantPriKey(), merchantEntity.getAliPubKey(), params.get("trade_no"), aliOrderEntity.getOrderAmount(), merchantEntity.getSettleIdOut(), transInAliUserId, merchantEntity.getAuthCode(), amountPercent);
+            JSONObject resultJson = JSON.parseObject(result).getJSONObject("alipay_trade_order_settle_response");
+            if (resultJson.getInteger("code") != 10000) {
+                logger.info("分账请求失败 ， 请求返回 : 错误码 , {} , 信息 , {}", resultJson.getString("sub_code"), resultJson.getString("sub_msg"));
+                if (resultJson.getInteger("code") == 40004) {
+                    logger.info("分账账户异常 , 暂时关闭此分账通道 ，通道ID : {} ，通道aliUserId : {}", merchantSettleChannelList.get(index).getId(), merchantSettleChannelList.get(index).getAliUserId());
+                }
+                merchantSettleService.closeSettleChannel(merchantSettleChannelList.get(index).getId());
+                flag = this.trySettle(merchantEntity, aliOrderEntity, params);
+                if (flag){//分账成功
+                    return true;
+                }
+                return false;
+            } else {
+                logger.info("分账请求成功");
+                return true;
+            }
+        }else {
+            logger.info("商户 {} , 无可用分账通道" , merchantEntity.getId());
+            return false;
         }
     }
 

@@ -28,5 +28,7 @@ public interface MerchantService extends IService<MerchantEntity> {
     void closeChannel(Long channelId);
 
     void closeTradeStatus(Long merchantId);
+
+    void closeTradeFlag(Long merchantrId);
 }
 

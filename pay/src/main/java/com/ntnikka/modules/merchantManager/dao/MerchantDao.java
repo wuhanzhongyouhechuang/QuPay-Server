@@ -25,4 +25,6 @@ public interface MerchantDao extends BaseMapper<MerchantEntity> {
     void closeChannel(Long channelId);
 
     void closeTradeStatus(Long merchantId);
+
+    void closeTradeFlag(Long merchantId);
 }

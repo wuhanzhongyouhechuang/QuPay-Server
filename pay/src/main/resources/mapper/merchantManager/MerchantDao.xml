@@ -56,4 +56,10 @@
         trade_status = 1
         where id = #{merchantId}
     </update>
+
+    <update id="closeTradeFlag" parameterType="Long">
+        update merchant
+        set trade_status = 1
+        where id = #{merchantId}
+    </update>
 </mapper>

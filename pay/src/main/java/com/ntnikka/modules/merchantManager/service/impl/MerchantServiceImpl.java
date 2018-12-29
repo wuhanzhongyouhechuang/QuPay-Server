@@ -80,4 +80,9 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantDao, MerchantEntity
     public void closeTradeStatus(Long merchantId) {
         merchantDao.closeTradeStatus(merchantId);
     }
+
+    @Override
+    public void closeTradeFlag(Long merchantrId) {
+        merchantDao.closeTradeFlag(merchantrId);
+    }
 }
