@@ -176,4 +176,9 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantDao, MerchantEntity
         }
         channelService.batchSaveAndUpdate(merchantEntity.getChannelList());
     }
+
+    @Override
+    public void closeTradeFlag(Long merchantrId) {
+        merchantDao.closeTradeFlag(merchantrId);
+    }
 }

@@ -86,13 +86,38 @@ public class TradeOrderController extends AbstractController {
         params.put("merchantid", request.getParameter("merchantid"));
         params.put("status", request.getParameter("status"));
         params.put("merchantdept", request.getParameter("merchantdept"));
-        //orderList
+
+
+        //创建HSSFWorkbook
+        HSSFWorkbook orderWb = new HSSFWorkbook();
+
         List<TradeOrder> orderList = tradeOrderService.queryList(params);
+        //List<Long> merchantDeptList = tradeOrderService.queryMerchantDeptIdList(params);
+        List<List<TradeOrder>> list = new ArrayList<>();
+        //根据部门id GroupBy
+        Map<Long , List<TradeOrder>> resultListMap = orderList.stream().collect(Collectors.groupingBy(tradeOrder -> tradeOrder.getMerchantDeptId()));
+        for (Map.Entry<Long, List<TradeOrder>> entry : resultListMap.entrySet()) {
+            String[][] content = this.getContent(entry.getValue());
+            String sheetNameTmp = entry.getValue().get(0).getMerchantDeptName();
+            orderWb = ExcelUtil.getHSSFWorkbook(sheetNameTmp, title, content, orderWb);
+        }
+        //HSSFWorkbook wb = ExcelUtil.getHSSFWorkbook(sheetName, title, content, null);
+        //响应到客户端
+        try {
+            this.setResponseHeader(response, fileName);
+            OutputStream os = response.getOutputStream();
+            orderWb.write(os);
+            os.flush();
+            os.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
-        String[][] content = new String[orderList.size()][];
-
-        for (int i = 0; i < orderList.size(); i++) {
-            TradeOrder order = orderList.get(i);
+    public String[][] getContent(List<TradeOrder> tradeOrderList){
+        String[][] content = new String[tradeOrderList.size()][];
+        for (int i = 0; i < tradeOrderList.size(); i++) {
+            TradeOrder order = tradeOrderList.get(i);
             content[i] = new String[title.length];
             content[i][0] = order.getId().toString();
             content[i][1] = order.getMerchantId().toString();
@@ -105,22 +130,8 @@ public class TradeOrderController extends AbstractController {
             content[i][8] = order.getPayTime() == null ? "" : DateUtil.Date2Str(order.getPayTime());
             content[i][9] = order.getNotifyStatus() == 0 ? "未通知" : "已通知";
         }
-
-        //创建HSSFWorkbook
-        HSSFWorkbook wb = ExcelUtil.getHSSFWorkbook(sheetName, title, content, null);
-
-        //响应到客户端
-        try {
-            this.setResponseHeader(response, fileName);
-            OutputStream os = response.getOutputStream();
-            wb.write(os);
-            os.flush();
-            os.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        return content;
     }
-
 
     //发送响应流方法
     public void setResponseHeader(HttpServletResponse response, String fileName) {

@@ -242,7 +242,9 @@
         a.trade_no AS tradeNo,
         a.pay_time AS payTime,
         a.sys_trade_no AS sysTradeNo,
-        a.merchant_name AS merchantName
+        a.merchant_name AS merchantName ,
+        a.merchant_dept_id AS  merchantDeptId ,
+        a.merchant_dept_name AS merchantDeptName
         FROM trade_order a
         where a.status = 1
         <if test="merchantdept != null and merchantdept != ''">
@@ -263,5 +265,30 @@
         <if test="endtime != null and endtime != ''">
             and a.pay_time &lt;= #{endtime}
         </if>
+    </select>
+
+    <select id="queryMerchantDeptIdList" parameterType="map" resultType="Long">
+        SELECT a.merchant_dept_id as merchantDeptId
+        FROM trade_order a
+        where a.status = 1
+        <if test="merchantdept != null and merchantdept != ''">
+            and a.merchant_dept_id = #{merchantdept}
+        </if>
+        <if test="tradeid != null and tradeid != ''">
+            and a.sys_trade_no = #{tradeid}
+        </if>
+        <if test="orderid != null and orderid != ''">
+            and order_id = #{orderid}
+        </if>
+        <if test="merchantid != null and merchantid != ''">
+            and a.merchant_id = #{merchantid}
+        </if>
+        <if test="starttime != null and starttime != ''">
+            and a.pay_time &gt;= #{starttime}
+        </if>
+        <if test="endtime != null and endtime != ''">
+            and a.pay_time &lt;= #{endtime}
+        </if>
+        group by merchant_dept_id
     </select>
 </mapper>

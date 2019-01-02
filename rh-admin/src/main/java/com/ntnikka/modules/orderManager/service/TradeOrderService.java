@@ -44,4 +44,6 @@ public interface TradeOrderService extends IService<TradeOrder> {
     Map<String, String> queryToPayOrderCountByMerchant(Map map);
 
     Map<String, String> queryFailOrderCountByMerchant(Map map);
+
+    List<Long> queryMerchantDeptIdList(Map map);
 }

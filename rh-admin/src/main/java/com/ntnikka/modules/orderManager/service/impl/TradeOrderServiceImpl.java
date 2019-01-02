@@ -213,4 +213,16 @@ public class TradeOrderServiceImpl extends ServiceImpl<TradeOrderDao, TradeOrder
                         .le(EmptyUtil.isNotEmpty(end), "create_time", end));
         return new PageUtils(page);
     }
+
+    @Override
+    public List<Long> queryMerchantDeptIdList(Map map) {
+        String tradeId = map.get("tradeid") == null ? "" : map.get("tradeid").toString();
+        String orderId = map.get("orderid") == null ? "" : map.get("orderid").toString();
+        String merchantId = map.get("merchantid") == null ? "" : map.get("merchantid").toString();
+        String status = map.get("status") == null ? "" : map.get("status").toString();
+        String star = map.get("starttime") == null ? "" : map.get("starttime").toString();
+        String end = map.get("endtime") == null ? "" : map.get("endtime").toString();
+        String merchantdept = map.get("merchantdept") == null ? "" : map.get("merchantdept").toString();
+        return tradeOrderDao.queryMerchantDeptIdList(map);
+    }
 }

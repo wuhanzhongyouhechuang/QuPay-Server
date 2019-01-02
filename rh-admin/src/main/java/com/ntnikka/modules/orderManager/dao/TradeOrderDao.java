@@ -42,4 +42,6 @@ public interface TradeOrderDao extends BaseMapper<TradeOrder> {
     Map<String, String> queryFailOrderCountByMerchant(Map map);
 
     List<TradeOrder> queryList(Map map);
+
+    List<Long> queryMerchantDeptIdList(Map map);
 }
