@@ -68,7 +68,6 @@ public class ExcelUtil {
 
     public static String[][] getContent(List<TradeOrder> orderList){
         String[][] content = new String[orderList.size()][];
-
         for (int i = 0; i < orderList.size(); i++) {
             TradeOrder order = orderList.get(i);
             content[i] = new String[title.length];

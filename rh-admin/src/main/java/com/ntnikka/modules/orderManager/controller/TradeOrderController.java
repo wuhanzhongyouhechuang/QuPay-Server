@@ -87,17 +87,14 @@ public class TradeOrderController extends AbstractController {
         params.put("status", request.getParameter("status"));
         params.put("merchantdept", request.getParameter("merchantdept"));
 
-
         //创建HSSFWorkbook
         HSSFWorkbook orderWb = new HSSFWorkbook();
 
         List<TradeOrder> orderList = tradeOrderService.queryList(params);
-        //List<Long> merchantDeptList = tradeOrderService.queryMerchantDeptIdList(params);
-        List<List<TradeOrder>> list = new ArrayList<>();
         //根据部门id GroupBy
         Map<Long , List<TradeOrder>> resultListMap = orderList.stream().collect(Collectors.groupingBy(tradeOrder -> tradeOrder.getMerchantDeptId()));
         for (Map.Entry<Long, List<TradeOrder>> entry : resultListMap.entrySet()) {
-            String[][] content = this.getContent(entry.getValue());
+            String[][] content = ExcelUtil.getContent(entry.getValue());
             String sheetNameTmp = entry.getValue().get(0).getMerchantDeptName();
             orderWb = ExcelUtil.getHSSFWorkbook(sheetNameTmp, title, content, orderWb);
         }
@@ -112,25 +109,6 @@ public class TradeOrderController extends AbstractController {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
-
-    public String[][] getContent(List<TradeOrder> tradeOrderList){
-        String[][] content = new String[tradeOrderList.size()][];
-        for (int i = 0; i < tradeOrderList.size(); i++) {
-            TradeOrder order = tradeOrderList.get(i);
-            content[i] = new String[title.length];
-            content[i][0] = order.getId().toString();
-            content[i][1] = order.getMerchantId().toString();
-            content[i][2] = order.getMerchantName();
-            content[i][3] = order.getPayType().equals("Wap") ? "Wap支付" : "二维码支付";
-            content[i][4] = order.getOrderId();
-            content[i][5] = order.getSysTradeNo() == null ? "" : order.getSysTradeNo();
-            content[i][6] = order.getTradeNo() == null ? "" : order.getTradeNo();
-            content[i][7] = order.getOrderAmount().toString();
-            content[i][8] = order.getPayTime() == null ? "" : DateUtil.Date2Str(order.getPayTime());
-            content[i][9] = order.getNotifyStatus() == 0 ? "未通知" : "已通知";
-        }
-        return content;
     }
 
     //发送响应流方法
