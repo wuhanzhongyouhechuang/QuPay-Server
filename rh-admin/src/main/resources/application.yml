@@ -80,3 +80,18 @@ mybatis-plus:
 logging:
   level:
     com.ntnikka.modules.*.dao : debug
+#rocketmq
+rocketmq:
+  #生产者配置
+  producer:
+    #该应用是否启用生产者
+    isOnOff: on
+    groupName: QuPayGroupSend
+    #mq的nameserver地址
+    namesrvAddr: 47.92.224.183:9876
+    #消息最大长度 默认1024*4(4M)
+    maxMessageSize: 4096
+    #发送消息超时时间,默认3000
+    sendMsgTimeout: 3000
+    #发送消息失败重试次数，默认2
+    retryTimesWhenSendFailed: 2

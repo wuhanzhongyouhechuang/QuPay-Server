@@ -55,6 +55,7 @@
                 <option value="32">微信</option>
                 <option value="321">微信免签</option>
                 <option value="421">QQ免签</option>
+                <option value="521">云闪付</option>
             </select>
         </div>
     </div>
@@ -153,9 +154,11 @@
                     if (payType == "QrCode") {
                         $("#qrCode").attr('src', data.data.qr_code);
                     } else {
-                        //window.open(data.data.qr_code, "_blank");
-                        window.location.href = data.data.qr_code;
-                        // $("#aliUrl").attr('href' , data.data.qr_code);
+                        if(payMethod == "521"){
+                            $("#qrCode").attr('src', data.data.qr_code);
+                        }else {
+                            window.location.href = data.data.qr_code;
+                        }
                     }
                 } else {
                     alert(data.msg);

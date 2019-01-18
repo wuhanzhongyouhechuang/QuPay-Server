@@ -103,6 +103,57 @@ public class AliPayRequest {
         return response.getBody();
     }
 
+    public static void doPost(HttpServletRequest httpRequest,
+                       HttpServletResponse httpResponse) throws ServletException, IOException {
+        String appid = "2018112862332988";
+        String prikey = "MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDImrF8jRarE3KQ\n" +
+                "I+fDv8KhCo1ZCV4qnUom0HEP4kDRuPtqD0gsIDz6HyhQZwCY5xORZcALWKvbpGZD\n" +
+                "OqrOHUgAvXUgq2l+1UIqSa29Cd/gdCvQtZlKOByXmXJkNYLByvj2ZZE6xeojWVjk\n" +
+                "LXB4wc1vd2eRV4yJqV/2c8zj2EUES/2W1swgjHn9s9K6nrzZXSRODK49jMIjaUwj\n" +
+                "4d92WeNfJDQ/NCF6kqsrPNQH3JgxJ1ipnqW43U4JNgeceb2Z9JrvMQVFZsPs8LrN\n" +
+                "6jlnt7npwwpsqG/tpRvfRkcMhuZbrAw4mFZSw6Trxp11yUje9oD4kOfV8hjsUet6\n" +
+                "ImHsNBMDAgMBAAECggEBAIUjZjiryyevuJFBw0h/tMT9I+K7/Ot7iQNJxEAugaav\n" +
+                "hu1VRylCHDZFB5SVSCgy9SHCzjq5lxYnfleQUFyLwoX7OAl+un2bPFakn9KfAx8M\n" +
+                "+yeB30MLCq7zAKDRgv7rn2Co+EJxqHvdiMmn/sWmmpooPWyRFo0nBLGlGY7+so+u\n" +
+                "UrmdOi2L1ZMWsOFt6disX86B9WkBIUeS+Es+avQbJwwP+A3Wq0+WfOdzimV8KWo7\n" +
+                "x5SeNyOQBLR9BCSUlpOWBrZxc1mrHQ1HTa1ZMYBRIbA01iMUpmd5SFSBXddS3FQz\n" +
+                "Me9CH67B5W32B0PJj+5bTNpCZ/Wr4X/s9ZcE3OifF4ECgYEA5zj0fg1kIdjlGoTa\n" +
+                "edPDfUvVrQtJ95bUhY0PHV2lIEkbExmcOUFvx7FfR9mkfLVCfJYdebW/Bto09TYw\n" +
+                "o5+U073T5UV1Y79wpMZzQAm4+u8K9h9OhJYwddqwpWeUkjxooTTfP0+PWftNOGuv\n" +
+                "5MB0VYWHyfzSwq7tb3TKx2mxADkCgYEA3hnMt8OMhbpq+Hrk61u6j9NzA8TAEgUL\n" +
+                "zo6XTPtWGmLKJyO3rr4v86NkPwy0Cn7shhjWj8Y+GxXx6Ce0n+LaCzQ8J7QNHb0h\n" +
+                "YZKnbl0t3bfF7pZ1ICWAI2rv1QJ//Dho0HfDXFDulSVUfx0d155fKrXacUgsPjRE\n" +
+                "YyL9vh7ndRsCgYB8XqtLvgI1Hogk2n71do05MPgvCtpvXWbUqwoNPpiaJBh3Dph0\n" +
+                "R5lLbUGV0SBjn8+yWcBi/fpRQj+oAczpxeV0ey+lq9W3oHqDdub49AHWn4ti1XYT\n" +
+                "ZQGN8uJ/JZbJjcqto1XNpQqzWLOxfGLxBP/OHHPslpv68cJu6ABGgLgfKQKBgQCW\n" +
+                "vI3bXmV90UKOd+Hr9qqMuKbDtQHiePhFbTM0tRP//nJS1APzHfMveQItZHLA+NmQ\n" +
+                "PUVJ+PLnsSIoPOJy7SStG/uDush4GYeRUFZAKg9Z/kLgpc7CTZFE+GvjdrnkNWi1\n" +
+                "q8K0Yd067kYFq344e6z9MMUbwy773L9ZRUNPiGvwZwKBgH1HgxTTSjuG3Fgp/f9p\n" +
+                "qMd+snne2R6e/pWBne9HH5lRoq5WBMWmsAR8pD3oO3AXKoeFCpHW+ZVL9xB9ZUTk\n" +
+                "4infjHppWzPlYP3mSlEObxbrQf6sNB+lcStJxS8hLYx1p6Gm8H094JsNgXLXVxkQ\n" +
+                "xyPbRGy77FMie5/WFB2/bs7W";
+        String aliPubKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAhlEQ81nGElX6+/G4zu9V6y28UlKyVtPFDm31fHeU1x04RAl346XdJNWHkHQIpQz27u79nltNImYSbtNTsL3pOVw4q41u6Pj4ATr6wrYlZVEy5RMW89E6buvA+MErU/86ydPhuYZ3UbOq4CDGUo5flVxKezaipg1fqndRcwCtQ8ps448oAR6w1dmSObTT4k9MdRNR+d6hdSpXgShL641LzYctI4trGRkpqeCAI04aSunFT36pNlgLYOp5z6UEAHwuF3tZxWW2mk9GZuZrjpHytoH77gAXKCKjKB234VW6sgpp5w0LUY4P9WfMVl8UvYJweMaDZVZSvue2yGeaC3o9SQIDAQAB";
+        AlipayClient alipayClient = new DefaultAlipayClient("https://openapi.alipay.com/gateway.do", appid, prikey, "json", AlipayConfig.input_charset, aliPubKey, AlipayConfig.sign_type_RSA2); //获得初始化的AlipayClient
+        AlipayTradeWapPayRequest  alipayRequest = new AlipayTradeWapPayRequest ();//创建API对应的request
+//        alipayRequest.setReturnUrl("http://domain.com/CallBack/return_url.jsp");
+        alipayRequest.setNotifyUrl("http://yxsfa7.natappfree.cc/pay-admin/api/v1/AliNotify");//在公共参数中设置回跳和通知地址
+        alipayRequest.setBizContent("{" +
+                "    \"out_trade_no\":\""+IdWorker.getSysTradeNum()+"\"," +
+                "    \"product_code\":\"QUICK_WAP_PAY\"," +
+                "    \"total_amount\": \"1.00\"," +
+                "    \"subject\": \"网站支付\" " +
+                "  }");//填充业务参数
+        String form="";
+        try {
+            form = alipayClient.pageExecute(alipayRequest).getBody(); //调用SDK生成表单
+        } catch (AlipayApiException e) {
+            e.printStackTrace();
+        }
+        httpResponse.setContentType("text/html;charset=" + AlipayConfig.input_charset);
+        httpResponse.getWriter().write(form);//直接将完整的表单html输出到页面
+        httpResponse.getWriter().flush();
+        httpResponse.getWriter().close();
+    }
 
     public static void main(String[] args) {
         String jsonStr = "{\"alipay_trade_precreate_response\":{\"code\":\"10000\",\"msg\":\"Success\",\"out_trade_no\":\"2015032001010100211\",\"qr_code\":\"https:\\/\\/qr.alipay.com\\/bax043173wzfnxohhdho6090\"},\"sign\":\"OUt2HdOZllr6w9txa45KSXy1fGnEhUPKOv7149nasPZdjojseYWDDQjc6pNLy2nJn9Uh4lahbGoPORtwRo26MlUWlMv+jcHGWmKbIvo2LNEYBaRSsi+nBPs3W7VF/D5MTC4pfwEuTK+dZBYuPCSuonWX4baLOVrBeFq4/k+t1UsheQom3n9ps0Xgxc17YQ8DQcMgzt+6W5zJgHqp8CkFPpKZjxf+P1UrbWgqHhNKhMg6gEscXk14dY6B90eta95PKUCWhlmUn6yn/KU4QqJF1BLkVHKHx/cq6kpIuckMeojsav0uQQT/vUfQcsaxX+8mhDR+OEPCLn9ocTpmzJeiCw==\"}";

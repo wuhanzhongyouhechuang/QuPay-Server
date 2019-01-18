@@ -86,5 +86,17 @@ public class MD5Utils {
         System.out.println("解密===========================" + Str);
         System.out.println(SignUtil.checkSign(Md5Str, s));
         System.out.println("================>>" + Md5Str.toUpperCase());
+        String dt = "1547779636021";
+        String no = "20190118104431F38DADCFA379258034B27882F4509044EB1C51731FB983F6-79809881895568-00250001   00049992   0378230118104711_00";
+        String money = "0.01";
+        String userids = "10980";
+        String sign = "c3a1774b02b32d853240572025700a02";
+        String type = "unionpay";
+        String version = "v20181101";
+        String mark = "36945601181035253900";
+        String account = "union";
+        String signkey = "90DCF6DA7222D564D523A5681C17B8A4";
+        String checkSign = encode(dt+mark+money+no+type+signkey+userids+version);
+        System.out.println("================>>" + checkSign);
     }
 }
