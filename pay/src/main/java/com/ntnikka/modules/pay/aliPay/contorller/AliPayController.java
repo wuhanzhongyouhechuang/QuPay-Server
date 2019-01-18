@@ -105,6 +105,9 @@ public class AliPayController extends AbstractController {
                 }
             }
         }else {//个人码商户
+            if (aliOrderEntity.getPayMethod().equals("22")){//个码云闪付商户无法下正常当面付
+                return R.error(405000, "下单失败，该商户无法试用当面付通道");
+            }
             List<ChannelEntity> channelEntityList = channelService.queryUseableChannelByMerchantId(merchant.getId());
             if (EmptyUtil.isEmpty(channelEntityList)){
                 logger.error("个人码商户无可用通道 ， merchantId = {} ", merchant.getId());
@@ -210,6 +213,11 @@ public class AliPayController extends AbstractController {
                     payType = "qq";
                     logger.info("qq个人码下单");
                     break;
+                case "521":
+                    //云闪付
+                    payType = "unionpay";
+                    logger.info("云闪付下单");
+                    break;
                 default:
                     return R.error(407000, "请输入正确的payMethod值");
             }
@@ -235,31 +243,39 @@ public class AliPayController extends AbstractController {
             }
             String result = MobileRequest.createOrderMobile(mobileUrl, aliOrderEntity.getOrderAmount(), aliOrderEntity.getSysTradeNo(), payType);
             if (EmptyUtil.isEmpty(result)){
-                logger.info("个人码通道无返回 ，下单失败");
+                logger.info("手机通道无返回 ，下单失败");
                 if (merchant.getPriFlag() == 1){
-                    logger.info("个人码手机通道无返回  , 暂时关闭通道 ，请检查通道 : {} , 通道ID : {}" , merchant.getId(),channelId);
+                    logger.info("手机通道无返回  , 暂时关闭通道 ，请检查通道 : {} , 通道ID : {}" , merchant.getId(),channelId);
                     merchantService.closeChannel(channelId);
                 }
-                return R.error(405000, "个人码通道无返回 ，请检查相关配置");
+                return R.error(405000, "通道无返回 ，请检查相关配置");
             }
             JSONObject resultJson = JSON.parseObject(result);
             Map resultMap = new HashMap();
-            if (resultJson.getString("msg").contains("获取成功")) {
-                if (PayTypeEnum.WAP.getMessage().equals(aliOrderEntity.getPayType()) || PayTypeEnum.WAP.getMessage() == aliOrderEntity.getPayType()) {
-                    //wap
-                    resultMap.put("out_trade_no", resultJson.getString("mark"));
-                    resultMap.put("qr_code", resultJson.getString("payurl"));
-                    return R.ok().put("data", resultMap);
+            if (payType.equals("alipay") || payType.equals("wechat") || payType.equals("qq")) {
+                if (resultJson.getString("msg").contains("获取成功")) {
+                    if (PayTypeEnum.WAP.getMessage().equals(aliOrderEntity.getPayType()) || PayTypeEnum.WAP.getMessage() == aliOrderEntity.getPayType()) {
+                        //wap
+                        resultMap.put("out_trade_no", resultJson.getString("mark"));
+                        resultMap.put("qr_code", resultJson.getString("payurl"));
+                        return R.ok().put("data", resultMap);
+                    } else {
+                        //qrcode
+                        String imgStr = ImageToBase64Util.createQRCode(resultJson.getString("payurl"));
+                        resultMap.put("out_trade_no", resultJson.getString("mark"));
+                        resultMap.put("qr_code", imgStr);
+                        return R.ok().put("data", resultMap);
+                    }
                 } else {
-                    //qrcode
-                    String imgStr = ImageToBase64Util.createQRCode(resultJson.getString("payurl"));
-                    resultMap.put("out_trade_no", resultJson.getString("mark"));
-                    resultMap.put("qr_code", imgStr);
-                    return R.ok().put("data", resultMap);
+                    logger.error("获取个人码失败 ， msg : {}", resultJson.getString("msg"));
+                    return R.error(406000, "获取个人码失败");
                 }
-            } else {
-                logger.error("获取个人码失败 ， msg : {}", resultJson.getString("msg"));
-                return R.error(406000, "获取个人码失败");
+            }else {//云闪付
+                //qrcode云闪付暂只支持二维码
+                String imgStr = ImageToBase64Util.createQRCode(resultJson.getString("payurl"));
+                resultMap.put("out_trade_no", resultJson.getString("mark"));
+                resultMap.put("qr_code", imgStr);
+                return R.ok().put("data", resultMap);
             }
         }
         //二维码支付
@@ -842,5 +858,57 @@ public class AliPayController extends AbstractController {
         }
         logger.info("支付宝个码下单 ， 商户id : {} ， 通道Id : {} , aliUserId : {} " , merchant.getId() , channelId , aliUserId);
         response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/modules/aliPayTest/aliPay2.html?userId="+aliUserId+"&amount="+aliOrderEntity.getOrderAmount()+"&mark="+aliOrderEntity.getSysTradeNo());
+    }
+
+    @RequestMapping("UnionPayNotify")
+    public String testUnionPayNotify(HttpServletRequest request){
+        System.out.println("============>>>: enter UnionPayNotify");
+        Map<String, String> params = AliUtils.convertRequestParamsToMap(request); // 将异步通知中收到的待验证所有参数都存放到map中
+//        for (String key : params.keySet()) {
+//            System.out.println("Key = " + key);
+//            System.out.println("Value = " + params.get(key));
+//        }
+        //获取参数
+        String dt = params.get("dt");
+        String no = params.get("no");
+        String money = params.get("money");
+        String userids = params.get("userids");
+        String sign = params.get("sign");
+        String type = params.get("type");
+        String version = params.get("version");
+        String mark = params.get("mark");
+        String account = params.get("account");
+        //验签
+        //1.获取sys_trade_no查询订单
+        AliOrderEntity aliOrderEntity = aliOrderService.queryBySysTradeNo(mark);
+        if (aliOrderEntity == null) {
+            return "success订单不存在";
+        }
+        String signkey = aliOrderEntity.getPartner();
+        logger.info("回调金额 ， amount = {}", money);
+        logger.info("订单金额 ， amount = {}", aliOrderEntity.getOrderAmount().toString());
+        String checkSignStr = dt+mark+money+no+type+signkey+userids+version;
+        String checkSign = MD5Utils.encode(checkSignStr);
+        logger.info("sign , sign = {}", sign);
+        logger.info("sign , checkSignStr = {}", checkSignStr);
+        logger.info("sign , checkSign = {}", checkSign);
+        if (!SignUtil.checkSign(sign.toUpperCase(), checkSignStr)) {
+            return "success验签失败";
+        }
+        //验签通过修改订单状态,通知商户
+        Map<String, Object> map = new HashMap<>();
+        map.put("orderId", aliOrderEntity.getSysTradeNo());
+        map.put("tradeNo", no);
+        map.put("payTime", DateUtil.dtToStr(dt));
+        aliOrderService.updateTradeOrder(map);
+        //通知
+        String returnMsg = this.doNotify(aliOrderEntity.getNotifyUrl(), aliOrderEntity.getOrderId().toString(), AlipayTradeStatus.TRADE_SUCCESS.getStatus(), aliOrderEntity.getOrderAmount().toString(), aliOrderEntity.getPartner());
+        if (returnMsg.contains("success") || returnMsg.contains("SUCCESS")) {
+            logger.info("通知商户成功，修改通知状态");
+            aliOrderService.updateNotifyStatus(aliOrderEntity.getSysTradeNo());
+        } else {
+            logger.error("通知商户失败 , 商户返回 : {} " , returnMsg);
+        }
+        return "success";
     }
 }
