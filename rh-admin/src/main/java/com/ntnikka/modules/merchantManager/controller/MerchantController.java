@@ -306,4 +306,11 @@ public class MerchantController extends AbstractController {
         List<MerchantSettleChannel> merchantSettleChannelList = merchantSettleService.querySettleList(merchantId);
         return R.ok().put("list",merchantSettleChannelList);
     }
+
+    @RequestMapping("/queryMerchantListForDept")
+    public R queryMerchantListForDept(@RequestParam Map<String, Object> params){
+        params.put("deptId" , getUser().getMerchantDeptId());
+        PageUtils page = merchantService.queryPageAll(params);
+        return R.ok().put("page", page);
+    }
 }

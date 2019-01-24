@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -180,5 +181,17 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantDao, MerchantEntity
     @Override
     public void closeTradeFlag(Long merchantrId) {
         merchantDao.closeTradeFlag(merchantrId);
+    }
+
+    @Override
+    public PageUtils queryPageAll(Map params) {
+        String merchantId = (String) params.get("deptId");
+        List<String> idList = Arrays.asList(merchantId.split(","));
+        Page<MerchantEntity> page = this.selectPage(
+                new Query<MerchantEntity>(params).getPage(),
+                new EntityWrapper<MerchantEntity>()
+                        .in(EmptyUtil.isNotEmpty(merchantId) , "merchant_dept_id" ,idList)
+        );
+        return new PageUtils(page);
     }
 }

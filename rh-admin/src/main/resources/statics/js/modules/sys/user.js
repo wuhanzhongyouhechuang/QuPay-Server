@@ -21,6 +21,9 @@ $(function () {
                 formatter: function (value, options, row) {
                     return '<span class="label label-danger pointer" onclick="vm.audit(\'' + value + '\')">详情</span>'
                 }
+            },
+            {
+                label: '备注', name: 'remark', width: 65
             }
         ],
         viewrecords: true,
@@ -102,7 +105,8 @@ var vm = new Vue({
             deptName: null,
             roleIdList: [],
             merchantDeptId : null,
-            merchantDeptName: null
+            merchantDeptName: null,
+            remark:null
         }
     },
     methods: {

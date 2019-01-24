@@ -53,5 +53,7 @@ public interface MerchantService extends IService<MerchantEntity> {
     void updatePriChannel(MerchantEntity merchantEntity);
 
     void closeTradeFlag(Long merchantrId);
+
+    PageUtils queryPageAll(Map map);
 }
 
