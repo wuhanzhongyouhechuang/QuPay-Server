@@ -880,6 +880,7 @@ public class AliPayController extends AbstractController {
         String account = params.get("account");
         //验签
         //1.获取sys_trade_no查询订单
+        logger.info("回调订单号 ， sysNo = {}", mark);
         AliOrderEntity aliOrderEntity = aliOrderService.queryBySysTradeNo(mark);
         if (aliOrderEntity == null) {
             return "success订单不存在";
