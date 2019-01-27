@@ -1020,28 +1020,35 @@ public class AliPayController extends AbstractController {
             //暂用404页面 后面添加失效提示页面
             response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/404.html");
         }
-//        AliOrderEntity aliOrderEntity = aliOrderService.queryBySysTradeNo(sysTradeNo);
-//        String mobileUrl = "";
-//        Long channelId = 0L;
-//        String aliUserId = "";
-//        if (merchant.getPriFlag() == 0){
-//            mobileUrl = merchant.getMobileUrl();
-//        }else {
-//            List<ChannelEntity> channelEntityList = channelService.queryUseableChannelByMerchantId(merchant.getId());
-//            if (merchant.getPollingFlag() == 1){//开启轮询
-//                int index = PollingUtil.RandomIndex(channelEntityList.size());
-//                mobileUrl = channelEntityList.get(index).getUrl();
-//                channelId = channelEntityList.get(index).getId();
-//                aliUserId = channelEntityList.get(index).getAliUserId();
-//            }else {//轮询关闭
-//                mobileUrl = channelEntityList.get(0).getUrl();
-//                channelId = channelEntityList.get(0).getId();
-//                aliUserId = channelEntityList.get(0).getAliUserId();
-//            }
-//        }
-//        logger.info("支付宝个码下单 ， 商户id : {} ， 通道Id : {} , aliUserId : {} " , merchant.getId() , channelId , aliUserId);
-        String bankAccount = URLEncoder.encode("缪细华","utf-8");
-        String url = "https://www.alipay.com/?appId=09999988&actionType=toCard&sourceId=bill&cardNo=6228480078134650478&bankAccount="+bankAccount+"&money="+amount+"&amount="+amount+"&bankMark=ABC";
+        AliOrderEntity aliOrderEntity = aliOrderService.queryBySysTradeNo(sysTradeNo);
+        if (null == aliOrderEntity){
+            //暂用404页面 后面添加提示页面 订单不存在
+            response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/404.html");
+        }
+        MerchantEntity merchant = merchantService.queryById(aliOrderEntity.getMerchantId());
+        if (merchant == null) {
+            logger.info("商户不存在 ， 订单系统订单号 : {}" , sysTradeNo);
+            response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/404.html");
+        }
+        String cardNo = "";
+        String bankAccount = "";
+        String bankMark = "";
+        Long channelId = 0L;
+        List<ChannelEntity> channelEntityList = channelService.queryUseableChannelByMerchantId(merchant.getId());
+        if (merchant.getPollingFlag() == 1){//开启轮询
+            int index = PollingUtil.RandomIndex(channelEntityList.size());
+            cardNo = channelEntityList.get(index).getBankCardNum();
+            bankAccount = channelEntityList.get(index).getBankAccount();
+            bankMark = channelEntityList.get(index).getBankCode();
+            channelId = channelEntityList.get(index).getId();
+        }else {//轮询关闭
+            cardNo = channelEntityList.get(0).getBankCardNum();
+            bankAccount = channelEntityList.get(0).getBankAccount();
+            bankMark = channelEntityList.get(0).getBankCode();
+            channelId = channelEntityList.get(0).getId();
+        }
+        logger.info("支付宝转账银行卡 ， 商户id : {} ， 通道Id : {} , cardNum : {} " , merchant.getId() , channelId , cardNo);
+        String url = "https://www.alipay.com/?appId=09999988&actionType=toCard&sourceId=bill&cardNo="+cardNo+"&bankAccount="+URLEncoder.encode(bankAccount ,"utf-8")+"&money="+amount+"&amount="+amount+"&bankMark="+bankMark;
         response.sendRedirect(url);
     }
 
