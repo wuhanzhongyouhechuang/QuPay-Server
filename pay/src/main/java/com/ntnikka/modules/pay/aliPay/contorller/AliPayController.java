@@ -21,6 +21,7 @@ import com.ntnikka.modules.pay.aliPay.service.AliOrderService;
 import com.ntnikka.modules.pay.aliPay.utils.*;
 import com.ntnikka.modules.sys.controller.AbstractController;
 import com.ntnikka.utils.R;
+import com.ntnikka.utils.RedisUtil;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.util.Date;
 import java.util.HashMap;
@@ -60,10 +62,15 @@ public class AliPayController extends AbstractController {
     @Autowired
     private MerchantSettleService merchantSettleService;
 
-    private static final String Ali_Request_Url = "https://ds.alipay.com/?from=mobilecodec&scheme=";
+    @Autowired
+    private RedisUtil redisUtil;
 
-    private static final String Ali_Prefix = "alipays://platformapi/startapp?appId=20000067&url=";
+//    private static final String Ali_Request_Url = "https://ds.alipay.com/?from=mobilecodec&scheme=";
+//
+//    private static final String Ali_Prefix = "alipays://platformapi/startapp?appId=20000067&url=";
 
+    private static final BigDecimal[] PriceFloat = {new BigDecimal(-0.10),new BigDecimal(-0.09),new BigDecimal(-0.08),new BigDecimal(-0.07),new BigDecimal(-0.06),new BigDecimal(-0.05),new BigDecimal(-0.04),new BigDecimal(-0.03),new BigDecimal(-0.02),new BigDecimal(-0.01),
+            new BigDecimal(0.01),new BigDecimal(0.02),new BigDecimal(0.03),new BigDecimal(0.04),new BigDecimal(0.05),new BigDecimal(0.06),new BigDecimal(0.07),new BigDecimal(0.08),new BigDecimal(0.09),new BigDecimal(0.10)};
 
     @RequestMapping(value = "/create", method = RequestMethod.POST)
     public R testController(@RequestBody AliOrderEntity aliOrderEntity, HttpServletRequest request) throws Exception {
@@ -97,6 +104,10 @@ public class AliPayController extends AbstractController {
         }
         //如果为个人码支付，先判断是否配置了相对应绑定手机外网地址
         if (merchant.getPriFlag() == 0) {
+            if (aliOrderEntity.getPayMethod().equals("222") || aliOrderEntity.getPayMethod().equals("521")){//普通商户无法下单云闪付和支付宝转账
+                logger.error("商户为当面付商户，云闪付或转账无法下单 ，商户ID : {} ", merchant.getId());
+                return R.error(405000, "下单失败, 该商户无云闪付或者银行卡通道 ,请联系客服人员");
+            }
             if (aliOrderEntity.getPayMethod().equals("221") || aliOrderEntity.getPayMethod().equals("321") || aliOrderEntity.getPayMethod().equals("421")) {
                 String mobileUrl = merchant.getMobileUrl();
                 if (StringUtils.isEmpty(mobileUrl)) {//如果为空 返回先配置url
@@ -131,6 +142,18 @@ public class AliPayController extends AbstractController {
         aliOrderEntity.setUpdateTime(new Date());
         aliOrderEntity.setMerchantDeptId(merchant.getMerchantDeptId());
         aliOrderEntity.setMerchantDeptName(merchant.getMerchantDeptName());
+        if (aliOrderEntity.getPayMethod().equals("521") || aliOrderEntity.getPayMethod().equals("222")){
+            //云闪付或者支付宝转账银行卡设置金额浮动且金额不能低于0.2
+            if (aliOrderEntity.getOrderAmount().compareTo(new BigDecimal(0.2)) < 0){
+                return R.error(405000, "下单失败，云闪付或者支付宝转账银行卡金额不能低于0.2");
+            }
+            BigDecimal newAmount = this.getFloatAmount(aliOrderEntity.getOrderAmount() , aliOrderEntity.getSysTradeNo() , 0);
+            if (newAmount.compareTo(new BigDecimal(-1)) == 0){
+                //生成五次金额都已在池中，不在生成
+                return R.error(403017,"金额池中无可用金额，暂时无法下单或提交其他金额");
+            }
+            aliOrderEntity.setOrderAmount(newAmount);
+        }
         aliOrderService.save(aliOrderEntity);
         //4.判断payMethod 22-支付宝 221-支付包免签 32-微信支付(第三方) 321-微信面前 421-QQ免签
         if (aliOrderEntity.getPayMethod() == "22" || aliOrderEntity.getPayMethod().equals("22")) {
@@ -195,7 +218,15 @@ public class AliPayController extends AbstractController {
                 wechatMap.put("qr_code", imgStr);
                 return R.ok().put("data", wechatMap);
             }
-        } else {
+        } else if(aliOrderEntity.getPayMethod().equals("222") || aliOrderEntity.getPayMethod() == "222"){//支付宝转账银行卡
+            logger.info("支付宝转银行卡下单");
+            String payUrl = "http://47.92.219.16/api/v1/tradeUnion?amount="+aliOrderEntity.getOrderAmount()+"&sysTradeNo="+aliOrderEntity.getSysTradeNo();
+            Map resultMap = new HashMap();
+            String imgStr = ImageToBase64Util.createQRCode(payUrl);
+            resultMap.put("out_trade_no", aliOrderEntity.getSysTradeNo());
+            resultMap.put("qr_code", imgStr);
+            return R.ok().put("data", resultMap);
+        }else {
             String payType = "";
             switch (aliOrderEntity.getPayMethod()) {
                 case "221":
@@ -876,19 +907,51 @@ public class AliPayController extends AbstractController {
         String sign = params.get("sign");
         String type = params.get("type");
         String version = params.get("version");
+        String remark = params.get("mark");
         String mark = params.get("mark");
         String account = params.get("account");
+        AliOrderEntity aliOrderEntity = new AliOrderEntity();
+        //1.通过type判断云闪付or转账银行卡，
+        //2.type为云闪付先判断mark是否是sysNo（银联app扫码支付为mark不为sysNo），不是则拿amount去redis中sysNo
+        //3.type为银行转账，直接拿amount在redis中查sysNo
+        //4.支付成功修改状态，释放redis中该金额
+        if (type.equals("unionpay")){//云闪付
+            if (mark.contains("369")){
+                //云闪付支付 回调有订单号
+                logger.info("云闪付支付订单 , sysNo = {}" , mark);
+                aliOrderEntity = aliOrderService.queryBySysTradeNo(mark);
+            }else {
+                //银联app支付 回调无订单号
+                if (redisUtil.hasKey(money)){//未过期
+                    mark = (String) redisUtil.get(money);
+                    logger.info("云闪付支付订单，银联app支付 , sysNo = {}" ,mark);
+                    aliOrderEntity = aliOrderService.queryBySysTradeNo(mark);
+                }else {
+                    logger.info("云闪付支付订单，银联app支付超时，无法匹配订单");
+                    return "error云闪付支付订单超时";
+                }
+            }
+        }else {//支付宝转账银行卡
+            logger.info("key : {}" , money.trim());
+            if (redisUtil.hasKey(money.trim())){//未过期
+                mark = (String) redisUtil.get(money.trim());
+                logger.info("支付宝转银行卡订单, sysNo = {} " , mark);
+                aliOrderEntity = aliOrderService.queryBySysTradeNo(mark);
+            }else {
+                logger.info("支付宝转银行卡订单超时，无法匹配订单");
+                return "error支付宝转银行卡订单超时";
+            }
+
+        }
         //验签
         //1.获取sys_trade_no查询订单
-        logger.info("回调订单号 ， sysNo = {}", mark);
-        AliOrderEntity aliOrderEntity = aliOrderService.queryBySysTradeNo(mark);
         if (aliOrderEntity == null) {
             return "success订单不存在";
         }
         String signkey = aliOrderEntity.getPartner();
         logger.info("回调金额 ， amount = {}", money);
         logger.info("订单金额 ， amount = {}", aliOrderEntity.getOrderAmount().toString());
-        String checkSignStr = dt+mark+money+no+type+signkey+userids+version;
+        String checkSignStr = dt+remark+money+no+type+signkey+userids+version;
         String checkSign = MD5Utils.encode(checkSignStr);
         logger.info("sign , sign = {}", sign);
         logger.info("sign , checkSignStr = {}", checkSignStr);
@@ -903,13 +966,71 @@ public class AliPayController extends AbstractController {
         map.put("payTime", DateUtil.dtToStr(dt));
         aliOrderService.updateTradeOrder(map);
         //通知
-        String returnMsg = this.doNotify(aliOrderEntity.getNotifyUrl(), aliOrderEntity.getOrderId().toString(), AlipayTradeStatus.TRADE_SUCCESS.getStatus(), aliOrderEntity.getOrderAmount().toString(), aliOrderEntity.getPartner());
+        String returnMsg = this.doNotify(aliOrderEntity.getNotifyUrl(), aliOrderEntity.getOrderId(), AlipayTradeStatus.TRADE_SUCCESS.getStatus(), aliOrderEntity.getOrderAmount().toString(), aliOrderEntity.getPartner());
         if (returnMsg.contains("success") || returnMsg.contains("SUCCESS")) {
             logger.info("通知商户成功，修改通知状态");
+            redisUtil.del(money.trim());//释放该金额
             aliOrderService.updateNotifyStatus(aliOrderEntity.getSysTradeNo());
         } else {
-            logger.error("通知商户失败 , 商户返回 : {} " , returnMsg);
+            logger.error("通知商户失败");
         }
         return "success";
+    }
+
+    public BigDecimal getFloatAmount(BigDecimal amount , String sysTradeNo , int count){
+        if (count == 5){//最多生成五次金额 五次之后不让下单
+            return new BigDecimal(-1);
+        }
+        int index = PollingUtil.RandomIndex(PriceFloat.length);
+        BigDecimal floatAmount = PriceFloat[index].setScale(2 ,BigDecimal.ROUND_HALF_UP);
+        BigDecimal newAmount = BalanceUtil.add(amount,floatAmount);
+        if (!redisUtil.hasKey(String.valueOf(newAmount))){//判断金额是否已用
+            //金额可用 添加redis 5分钟过期时间
+            logger.info("金额可用 , {}" , newAmount);
+            redisUtil.set(String.valueOf(newAmount),sysTradeNo , 5*60);
+            return newAmount;
+        }
+        logger.info("金额不可用 ，{}，重新生成" , newAmount);
+        return getFloatAmount(newAmount ,sysTradeNo , count++);
+    }
+
+    @RequestMapping(value = "tradeUnion" , method = RequestMethod.GET)
+    public void aliUnionPay(HttpServletResponse response ,@RequestParam String sysTradeNo ,@RequestParam String amount) throws Exception{
+        logger.info("银行卡转账金额 : {} , 系统订单号 : {}" , amount , sysTradeNo);
+        if (!redisUtil.hasKey(amount)){//key过期（二维码过期）
+            logger.info("二维码已过期 ， 订单系统订单号 : {}" , sysTradeNo);
+            //暂用404页面 后面添加失效提示页面
+            response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/overTime.html");
+        }
+        AliOrderEntity aliOrderEntity = aliOrderService.queryBySysTradeNo(sysTradeNo);
+        if (null == aliOrderEntity){
+            //暂用404页面 后面添加提示页面 订单不存在
+            response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/overTime.html");
+        }
+        MerchantEntity merchant = merchantService.queryById(aliOrderEntity.getMerchantId());
+        if (merchant == null) {
+            logger.info("商户不存在 ， 订单系统订单号 : {}" , sysTradeNo);
+            response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/404.html");
+        }
+        String cardNo = "";
+        String bankAccount = "";
+        String bankMark = "";
+        Long channelId = 0L;
+        List<ChannelEntity> channelEntityList = channelService.queryUseableChannelByMerchantId(merchant.getId());
+        if (merchant.getPollingFlag() == 1){//开启轮询
+            int index = PollingUtil.RandomIndex(channelEntityList.size());
+            cardNo = channelEntityList.get(index).getBankCardNum();
+            bankAccount = channelEntityList.get(index).getBankAccount();
+            bankMark = channelEntityList.get(index).getBankCode();
+            channelId = channelEntityList.get(index).getId();
+        }else {//轮询关闭
+            cardNo = channelEntityList.get(0).getBankCardNum();
+            bankAccount = channelEntityList.get(0).getBankAccount();
+            bankMark = channelEntityList.get(0).getBankCode();
+            channelId = channelEntityList.get(0).getId();
+        }
+        logger.info("支付宝转账银行卡 ， 商户id : {} ， 通道Id : {} , cardNum : {} " , merchant.getId() , channelId , cardNo);
+        String url = "https://www.alipay.com/?appId=09999988&actionType=toCard&sourceId=bill&cardNo="+cardNo+"&bankAccount="+URLEncoder.encode(bankAccount ,"utf-8")+"&money="+amount+"&amount="+amount+"&bankMark="+bankMark;
+        response.sendRedirect(url);
     }
 }

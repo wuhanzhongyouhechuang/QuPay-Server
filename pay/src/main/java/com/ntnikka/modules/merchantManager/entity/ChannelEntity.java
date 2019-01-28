@@ -13,7 +13,8 @@ import java.io.Serializable;
  **/
 @TableName("merchant_channel")
 public class ChannelEntity implements Serializable {
-    private static final long serialVersionUID = 1L;
+
+    private static final long serialVersionUID = -4265960008842949560L;
 
     @TableId
     private Long id;
@@ -43,6 +44,43 @@ public class ChannelEntity implements Serializable {
     private String deviceCode;
 
     private String aliUserId;
+
+    /**
+     * 账户名
+     */
+    private String bankAccount;
+    /**
+     * 银行代号
+     */
+    private String bankCode;
+    /**
+     * 银行卡号
+     */
+    private String bankCardNum;
+
+    public String getBankAccount() {
+        return bankAccount;
+    }
+
+    public void setBankAccount(String bankAccount) {
+        this.bankAccount = bankAccount;
+    }
+
+    public String getBankCode() {
+        return bankCode;
+    }
+
+    public void setBankCode(String bankCode) {
+        this.bankCode = bankCode;
+    }
+
+    public String getBankCardNum() {
+        return bankCardNum;
+    }
+
+    public void setBankCardNum(String bankCardNum) {
+        this.bankCardNum = bankCardNum;
+    }
 
     public String getAliUserId() {
         return aliUserId;
