@@ -143,6 +143,8 @@ public class AliPayController extends AbstractController {
         aliOrderEntity.setMerchantDeptId(merchant.getMerchantDeptId());
         aliOrderEntity.setMerchantDeptName(merchant.getMerchantDeptName());
         if (aliOrderEntity.getPayMethod().equals("521") || aliOrderEntity.getPayMethod().equals("222")){
+            //设置传递订单金额
+            aliOrderEntity.setActOrderAmount(aliOrderEntity.getOrderAmount());
             //云闪付或者支付宝转账银行卡设置金额浮动且金额不能低于0.2
             if (aliOrderEntity.getOrderAmount().compareTo(new BigDecimal(0.2)) < 0){
                 return R.error(405000, "下单失败，云闪付或者支付宝转账银行卡金额不能低于0.2");
@@ -966,13 +968,13 @@ public class AliPayController extends AbstractController {
         map.put("payTime", DateUtil.dtToStr(dt));
         aliOrderService.updateTradeOrder(map);
         //通知
-        String returnMsg = this.doNotify(aliOrderEntity.getNotifyUrl(), aliOrderEntity.getOrderId(), AlipayTradeStatus.TRADE_SUCCESS.getStatus(), aliOrderEntity.getOrderAmount().toString(), aliOrderEntity.getPartner());
+        String returnMsg = this.doNotify(aliOrderEntity.getNotifyUrl(), aliOrderEntity.getOrderId(), AlipayTradeStatus.TRADE_SUCCESS.getStatus(), aliOrderEntity.getActOrderAmount().toString(), aliOrderEntity.getPartner());
         if (returnMsg.contains("success") || returnMsg.contains("SUCCESS")) {
             logger.info("通知商户成功，修改通知状态");
             redisUtil.del(money.trim());//释放该金额
             aliOrderService.updateNotifyStatus(aliOrderEntity.getSysTradeNo());
         } else {
-            logger.error("通知商户失败");
+            logger.error("通知商户失败 ，商户返回 : {}" , returnMsg);
         }
         return "success";
     }
@@ -1032,5 +1034,11 @@ public class AliPayController extends AbstractController {
         logger.info("支付宝转账银行卡 ， 商户id : {} ， 通道Id : {} , cardNum : {} " , merchant.getId() , channelId , cardNo);
         String url = "https://www.alipay.com/?appId=09999988&actionType=toCard&sourceId=bill&cardNo="+cardNo+"&bankAccount="+URLEncoder.encode(bankAccount ,"utf-8")+"&money="+amount+"&amount="+amount+"&bankMark="+bankMark;
         response.sendRedirect(url);
+    }
+
+    @RequestMapping(value = "testRedis")
+    public R testRedis(){
+        redisUtil.set("test",IdWorker.getSysTradeNumShort(),1*60);
+        return R.ok();
     }
 }

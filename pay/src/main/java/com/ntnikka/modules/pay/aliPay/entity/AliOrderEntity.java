@@ -85,6 +85,16 @@ public class AliOrderEntity implements Serializable {
 
     private String merchantDeptName;
 
+    private BigDecimal actOrderAmount;
+
+    public BigDecimal getActOrderAmount() {
+        return actOrderAmount;
+    }
+
+    public void setActOrderAmount(BigDecimal actOrderAmount) {
+        this.actOrderAmount = actOrderAmount;
+    }
+
     public String getMerchantDeptName() {
         return merchantDeptName;
     }
