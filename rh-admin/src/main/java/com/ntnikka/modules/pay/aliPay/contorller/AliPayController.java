@@ -1058,12 +1058,12 @@ public class AliPayController extends AbstractController {
         if (!redisUtil.hasKey(amount)){//key过期（二维码过期）
             logger.info("二维码已过期 ， 订单系统订单号 : {}" , sysTradeNo);
             //暂用404页面 后面添加失效提示页面
-            response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/overTime.html");
+            response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/404.html");
         }
         AliOrderEntity aliOrderEntity = aliOrderService.queryBySysTradeNo(sysTradeNo);
         if (null == aliOrderEntity){
             //暂用404页面 后面添加提示页面 订单不存在
-            response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/overTime.html");
+            response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/404.html");
         }
         MerchantEntity merchant = merchantService.queryById(aliOrderEntity.getMerchantId());
         if (merchant == null) {
