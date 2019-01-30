@@ -156,6 +156,8 @@ public class AliPayController extends AbstractController {
         aliOrderEntity.setMerchantDeptId(merchant.getMerchantDeptId());
         aliOrderEntity.setMerchantDeptName(merchant.getMerchantDeptName());
         if (aliOrderEntity.getPayMethod().equals("521") || aliOrderEntity.getPayMethod().equals("222")){
+            //设置传递订单金额
+            aliOrderEntity.setActOrderAmount(aliOrderEntity.getOrderAmount());
             //云闪付或者支付宝转账银行卡设置金额浮动且金额不能低于0.2
             if (aliOrderEntity.getOrderAmount().compareTo(new BigDecimal(0.2)) < 0){
                 return R.error(405000, "下单失败，云闪付或者支付宝转账银行卡金额不能低于0.2");
@@ -711,6 +713,11 @@ public class AliPayController extends AbstractController {
     @RequestMapping(value = "notify", method = RequestMethod.POST)
     public String testNotify(HttpServletRequest request) {
         logger.info("进入模拟商户回调:{}", request);
+        Map<String, String> params = AliUtils.convertRequestParamsToMap(request); // 将异步通知中收到的待验证所有参数都存放到map中
+        for (String key : params.keySet()) {
+            System.out.println("Key = " + key);
+            System.out.println("Value = " + params.get(key));
+        }
         return "success";
     }
 
