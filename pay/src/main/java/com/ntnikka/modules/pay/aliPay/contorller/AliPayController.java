@@ -669,6 +669,11 @@ public class AliPayController extends AbstractController {
     @RequestMapping(value = "notify", method = RequestMethod.POST)
     public String testNotify(HttpServletRequest request) {
         logger.info("进入模拟商户回调:{}", request);
+        Map<String, String> params = AliUtils.convertRequestParamsToMap(request); // 将异步通知中收到的待验证所有参数都存放到map中
+        for (String key : params.keySet()) {
+            System.out.println("Key = " + key);
+            System.out.println("Value = " + params.get(key));
+        }
         return "success";
     }
 
