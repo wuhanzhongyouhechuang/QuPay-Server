@@ -2,6 +2,7 @@ package com.ntnikka.modules.pay.aliPay.utils;
 
 import com.ntnikka.modules.merchantManager.entity.MerchantEntity;
 
+import java.math.BigDecimal;
 import java.security.MessageDigest;
 
 /**
@@ -78,25 +79,8 @@ public class MD5Utils {
     }
 
     public static void main(String[] args) {
-        String s = "orderAmount=1.0&orderId=1524709290382234&partner=120180423025954421&payMethod=22&payType=QrCode&signType=MD5&version=1.0";
-        String s2 = "B67EC9504492E88E3F37C23EE7F3D3EA";
-        String Md5Str = encode(s);
-        System.out.println("加密============================" + Md5Str);
-        String Str = convertMD5(JM("98568d540134639BE4655198a36614a4"));
-        System.out.println("解密===========================" + Str);
-        System.out.println(SignUtil.checkSign(Md5Str, s));
-        System.out.println("================>>" + Md5Str.toUpperCase());
-        String dt = "1548641254195";
-        String no = "01月28日10:07";
-        String money = "0.23";
-        String userids = "10980";
-        String sign = "df29ed0cd47b654c847b0b74906a924a";
-        String type = "广发银行";
-        String version = "v20181101";
-        String mark = "2566";
-        String account = "union";
-        String signkey = "123456789";
-        String checkSign = encode(dt+mark+money+no+type+signkey+userids+version);
-        System.out.println("================>>" + checkSign);
+        BigDecimal bd = new BigDecimal("0.1").setScale(2);
+        BigDecimal bd2 = new BigDecimal("0.10");
+        System.out.println(bd.compareTo(bd2));
     }
 }

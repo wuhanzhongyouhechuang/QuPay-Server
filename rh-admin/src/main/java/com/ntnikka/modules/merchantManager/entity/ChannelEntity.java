@@ -58,6 +58,19 @@ public class ChannelEntity implements Serializable {
      */
     private String bankCardNum;
 
+    /**
+     * 支付宝账号
+     */
+    private String aliAccount;
+
+    public String getAliAccount() {
+        return aliAccount;
+    }
+
+    public void setAliAccount(String aliAccount) {
+        this.aliAccount = aliAccount;
+    }
+
     public String getBankAccount() {
         return bankAccount;
     }

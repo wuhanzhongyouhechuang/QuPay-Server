@@ -53,6 +53,7 @@
                 <option value="22" selected>支付宝</option>
                 <option value="221">支付宝免签</option>
                 <option value="222">支付宝转账银行卡</option>
+                <option value="223">支付宝红包</option>
                 <option value="32">微信</option>
                 <option value="321">微信免签</option>
                 <option value="421">QQ免签</option>
@@ -140,7 +141,7 @@
             "signType": signType,
             "sign": sign,
             "version": version,
-            "notifyUrl": "http://47.92.219.16/api/v1/notify"
+            "notifyUrl": "http://152.32.161.135/api/v1/notify"
         };
         $.ajax({
             url: baseURL + "/api/v1/create",

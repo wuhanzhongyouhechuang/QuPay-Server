@@ -235,12 +235,27 @@ public class AliPayController extends AbstractController {
             }
         } else if(aliOrderEntity.getPayMethod().equals("222") || aliOrderEntity.getPayMethod() == "222"){//支付宝转账银行卡
             logger.info("支付宝转银行卡下单");//本地测试填写内网穿透地址
-            String payUrl = "http://admin.vcapay.com.cn:8080/pay-admin/api/v1/tradeUnion?amount="+aliOrderEntity.getOrderAmount()+"&sysTradeNo="+aliOrderEntity.getSysTradeNo();
+            String payUrl = "http://admin.qupay666.net:8080/pay-admin/api/v1/tradeUnion?amount="+aliOrderEntity.getOrderAmount()+"&sysTradeNo="+aliOrderEntity.getSysTradeNo();
             Map resultMap = new HashMap();
             String imgStr = ImageToBase64Util.createQRCode(payUrl);
             resultMap.put("out_trade_no", aliOrderEntity.getSysTradeNo());
             resultMap.put("qr_code", imgStr);
             return R.ok().put("data", resultMap);
+        }else if (aliOrderEntity.getPayMethod().equals("223") || aliOrderEntity.getPayMethod() == "223"){//支付宝红包
+            logger.info("支付宝红包卡下单");//本地测试填写内网穿透地址
+            String payUrl = "http://admin.qupay666.net:8080/pay-admin/api/v1/tradeHongBao?sysTradeNo="+aliOrderEntity.getSysTradeNo();
+            Map resultMap = new HashMap();
+            resultMap.put("out_trade_no", aliOrderEntity.getSysTradeNo());
+            if (PayTypeEnum.WAP.getMessage().equals(aliOrderEntity.getPayType()) || PayTypeEnum.WAP.getMessage() == aliOrderEntity.getPayType()) {
+                //wap
+                resultMap.put("qr_code", payUrl);
+                return R.ok().put("data", resultMap);
+            } else {
+                //qrcode
+                String imgStr = ImageToBase64Util.createQRCode(payUrl);
+                resultMap.put("qr_code", imgStr);
+                return R.ok().put("data", resultMap);
+            }
         }else {
             String payType = "";
             switch (aliOrderEntity.getPayMethod()) {
@@ -917,12 +932,12 @@ public class AliPayController extends AbstractController {
         AliOrderEntity aliOrderEntity = aliOrderService.queryBySysTradeNo(sysTradeNo);
         if (aliOrderEntity == null) {
             logger.info("订单不存在 ， 订单系统订单号 : {}" , sysTradeNo);
-            response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/404.html");
+            response.sendRedirect("http://admin.qupay666.net:8080/pay-admin/404.html");
         }
         MerchantEntity merchant = merchantService.queryById(aliOrderEntity.getMerchantId());
         if (merchant == null) {
             logger.info("商户不存在 ， 订单系统订单号 : {}" , sysTradeNo);
-            response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/404.html");
+            response.sendRedirect("http://admin.qupay666.net:8080/pay-admin/404.html");
         }
         String mobileUrl = "";
         Long channelId = 0L;
@@ -943,7 +958,7 @@ public class AliPayController extends AbstractController {
             }
         }
         logger.info("支付宝个码下单 ， 商户id : {} ， 通道Id : {} , aliUserId : {} " , merchant.getId() , channelId , aliUserId);
-        response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/modules/aliPayTest/aliPay2.html?userId="+aliUserId+"&amount="+aliOrderEntity.getOrderAmount()+"&mark="+aliOrderEntity.getSysTradeNo());
+        response.sendRedirect("http://admin.qupay666.net:8080/pay-admin/modules/aliPayTest/aliPay2.html?userId="+aliUserId+"&amount="+aliOrderEntity.getOrderAmount()+"&mark="+aliOrderEntity.getSysTradeNo());
     }
 
     @RequestMapping("testWebPay")
@@ -1065,17 +1080,17 @@ public class AliPayController extends AbstractController {
         if (!redisUtil.hasKey(amount)){//key过期（二维码过期）
             logger.info("二维码已过期 ， 订单系统订单号 : {}" , sysTradeNo);
             //暂用404页面 后面添加失效提示页面
-            response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/404.html");
+            response.sendRedirect("http://admin.qupay666.net:8080/pay-admin/404.html");
         }
         AliOrderEntity aliOrderEntity = aliOrderService.queryBySysTradeNo(sysTradeNo);
         if (null == aliOrderEntity){
             //暂用404页面 后面添加提示页面 订单不存在
-            response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/404.html");
+            response.sendRedirect("http://admin.qupay666.net:8080/pay-admin/404.html");
         }
         MerchantEntity merchant = merchantService.queryById(aliOrderEntity.getMerchantId());
         if (merchant == null) {
             logger.info("商户不存在 ， 订单系统订单号 : {}" , sysTradeNo);
-            response.sendRedirect("http://admin.vcapay.com.cn:8080/pay-admin/404.html");
+            response.sendRedirect("http://admin.qupay666.net:8080/pay-admin/404.html");
         }
         String cardNo = "";
         String bankAccount = "";
@@ -1146,5 +1161,85 @@ public class AliPayController extends AbstractController {
         }
         return "success";
     }
+
+    @RequestMapping(value = "tradeHongBao" , method = RequestMethod.GET)
+    public void tradeHongBao(HttpServletResponse response , @RequestParam String sysTradeNo) throws Exception{
+        AliOrderEntity aliOrderEntity = aliOrderService.queryBySysTradeNo(sysTradeNo);
+        if (aliOrderEntity == null) {
+            logger.info("订单不存在 ， 订单系统订单号 : {}" , sysTradeNo);
+            response.sendRedirect("http://admin.qupay666.net:8080/pay-admin/404.html");
+        }
+        MerchantEntity merchant = merchantService.queryById(aliOrderEntity.getMerchantId());
+        if (merchant == null) {
+            logger.info("商户不存在 ， 订单系统订单号 : {}" , sysTradeNo);
+            response.sendRedirect("http://admin.qupay666.net:8080/pay-admin/404.html");
+        }
+        Long channelId = 0L;
+        String aliUserId = "";
+        String aliAccount = "";
+        List<ChannelEntity> channelEntityList = channelService.queryUseableChannelByMerchantId(merchant.getId());
+        if (merchant.getPollingFlag() == 1){//开启轮询
+            int index = PollingUtil.RandomIndex(channelEntityList.size());
+            channelId = channelEntityList.get(index).getId();
+            aliUserId = channelEntityList.get(index).getAliUserId();
+            aliAccount = channelEntityList.get(index).getAliAccount();
+        }else {//轮询关闭
+            channelId = channelEntityList.get(0).getId();
+            aliUserId = channelEntityList.get(0).getAliUserId();
+            aliAccount = channelEntityList.get(0).getAliAccount();
+        }
+        logger.info("支付宝红包下单 ， 商户id : {} ， 通道Id : {} , aliUserId : {} " , merchant.getId() , channelId , aliUserId);
+        response.sendRedirect("http://admin.qupay666.net:8080/pay-admin/modules/aliPayTest/redPay.html?userId="+aliUserId+"&amount="+aliOrderEntity.getOrderAmount()+"&mark="+aliOrderEntity.getSysTradeNo()+"&aliAccount="+aliAccount);
+    }
+
+    @RequestMapping("hongBaoNotify")
+    public String HongBaoNotify(HttpServletRequest request){
+        System.out.println("============>>>: enter AliUnionPayNotify");
+        Map<String, String> params = AliUtils.convertRequestParamsToMap(request); // 将异步通知中收到的待验证所有参数都存放到map中
+        for (String key : params.keySet()) {
+            System.out.println("Key = " + key);
+            System.out.println("Value = " + params.get(key));
+        }
+        //获取参数
+        String uid = params.get("uid");//支付宝userid
+        String money = params.get("price");
+        String sign = params.get("sign");
+        String remark = params.get("remark");//系统订单号
+        String agencyNo = params.get("agencyNo");//商户id
+        String outOrderNo = params.get("outOrderNo");//流水号
+        AliOrderEntity aliOrderEntity = aliOrderService.queryBySysTradeNo(remark);
+        if (aliOrderEntity == null) {
+            return "failure订单不存在";
+        }
+        logger.info("回调金额 ， amount = {}", money);
+        logger.info("订单金额 ， amount = {}", aliOrderEntity.getOrderAmount().toString());
+        if (new BigDecimal(money).compareTo(aliOrderEntity.getOrderAmount()) != 0){
+            return "failure验签失败,订单金额不匹配";
+        }
+        String checkSignStr = "agencyNo="+aliOrderEntity.getMerchantId()+"&outOrderNo="+outOrderNo+"&price="+money+"&remark="+aliOrderEntity.getSysTradeNo()+"&uid="+uid+aliOrderEntity.getPartner();
+        String checkSign = MD5Utils.encode(checkSignStr);
+        logger.info("sign , sign = {}", sign);
+        logger.info("sign , checkSignStr = {}", checkSignStr);
+        logger.info("sign , checkSign = {}", checkSign);
+        if (!SignUtil.checkSign(sign.toUpperCase(), checkSignStr)) {
+            return "success验签失败";
+        }
+        //验签通过修改订单状态,通知商户
+        Map<String, Object> map = new HashMap<>();
+        map.put("orderId", aliOrderEntity.getSysTradeNo());
+        map.put("tradeNo", outOrderNo);
+        map.put("payTime", new Date());
+        aliOrderService.updateTradeOrder(map);
+        //通知
+        String returnMsg = this.doNotify(aliOrderEntity.getNotifyUrl(), aliOrderEntity.getOrderId().toString(), AlipayTradeStatus.TRADE_SUCCESS.getStatus(), aliOrderEntity.getOrderAmount().toString(), aliOrderEntity.getPartner());
+        if (returnMsg.contains("success") || returnMsg.contains("SUCCESS")) {
+            logger.info("通知商户成功，修改通知状态");
+            aliOrderService.updateNotifyStatus(aliOrderEntity.getSysTradeNo());
+        } else {
+            logger.error("通知商户失败,商户返回 : " + returnMsg);
+        }
+        return "success";
+    }
+
 
 }

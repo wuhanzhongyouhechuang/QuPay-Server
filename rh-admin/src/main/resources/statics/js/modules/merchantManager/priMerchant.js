@@ -79,7 +79,8 @@ $(function () {
         colModel: [
             {label: 'ID', name: 'id', index: "id", width: 45, key: true},
             {label: '通道地址', name: 'url', sortable: false, width: 75},
-            // {label: '支付宝userId', name: 'aliUserId', sortable: false, width: 75},
+            {label: '支付宝userId', name: 'aliUserId', sortable: false, width: 75},
+            {label: '支付宝账号', name: 'aliAccount', sortable: false, width: 75},
             // {label: '权重', name: 'weight', sortable: false, width: 75},//权重字段预留
             // {label: '设备标识', name: 'deviceCode', sortable: false, width: 75},
             {label: '转账银行卡号', name: 'bankCardNum', sortable: false, width: 75},
@@ -163,7 +164,8 @@ var vm = new Vue({
             aliUserId : null,
             bankCardNum : null,
             bankCode : null,
-            bankAccount : null
+            bankAccount : null,
+            aliAccount : null
         }],
         specList2: [],
         merchant: {
@@ -188,6 +190,7 @@ var vm = new Vue({
             data.bankCardNum = null;
             data.bankCode = null;
             data.bankAccount = null;
+            data.aliAccount = null;
             vm.specList.push(data);
         },
         addSpecUpdate: function(){
@@ -198,6 +201,7 @@ var vm = new Vue({
             data.bankCardNum = null;
             data.bankCode = null;
             data.bankAccount = null;
+            data.aliAccount = null;
             vm.specList2.push(data);
         },
         delSpec: function(index,item){
