@@ -4,12 +4,12 @@ spring:
         driverClassName: com.mysql.jdbc.Driver
         druid:
             first:  #数据源1 epframe_init为MyApply数据源
-                url: jdbc:mysql://rm-8vb9gmjazcvhpes54uo.mysql.zhangbei.rds.aliyuncs.com:3306/backend?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8
-                username: admin_lq
+                url: jdbc:mysql://152.32.161.73:3306/backend?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8
+                username: admin
                 password: Lq-332384114
             second:  #数据源2
-                url: jdbc:mysql://rm-8vb9gmjazcvhpes54uo.mysql.zhangbei.rds.aliyuncs.com:3306/backend?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8
-                username: admin_lq
+                url: jdbc:mysql://152.32.161.73:3306/backend?allowMultiQueries=true&useUnicode=true&characterEncoding=UTF-8
+                username: admin
                 password: Lq-332384114
             initial-size: 10
             max-active: 100
