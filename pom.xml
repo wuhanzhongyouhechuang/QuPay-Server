@@ -13,6 +13,7 @@
         <module>rh-admin</module>
         <module>rh-common</module>
         <module>pay</module>
+        <module>rh-msgCenter</module>
     </modules>
 
 
