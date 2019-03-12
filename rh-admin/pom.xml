@@ -136,6 +136,10 @@
 			<version>3.6.2.Final</version>
 			<type>pom</type>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>

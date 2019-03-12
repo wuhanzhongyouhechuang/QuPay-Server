@@ -22,10 +22,7 @@ import com.ntnikka.modules.merchantManager.service.MerchantService;
 import com.ntnikka.modules.merchantManager.service.MerchantSettleService;
 import com.ntnikka.modules.pay.aliPay.config.AlipayConfig;
 import com.ntnikka.modules.pay.aliPay.config.WechatConfig;
-import com.ntnikka.modules.pay.aliPay.entity.AliNotifyEntity;
-import com.ntnikka.modules.pay.aliPay.entity.AliOrderEntity;
-import com.ntnikka.modules.pay.aliPay.entity.TradePrecreateMsg;
-import com.ntnikka.modules.pay.aliPay.entity.TradeQueryParam;
+import com.ntnikka.modules.pay.aliPay.entity.*;
 import com.ntnikka.modules.pay.aliPay.service.AliNotifyService;
 import com.ntnikka.modules.pay.aliPay.service.AliOrderService;
 import com.ntnikka.modules.pay.aliPay.service.TradePrecreateMsgService;
@@ -79,6 +76,9 @@ public class AliPayController extends AbstractController {
 
     @Autowired
     private RedisUtil redisUtil;
+
+    @Autowired
+    private WebSocketServer webSocketServer;
 
     private static final String Ali_Request_Url = "https://ds.alipay.com/?from=mobilecodec&scheme=";
 
@@ -1241,5 +1241,20 @@ public class AliPayController extends AbstractController {
         return "success";
     }
 
-
+    @RequestMapping(value = "testWebSocket")
+    public R testWebSocket(){
+        try {
+            MessageVo messageVo = new MessageVo();
+            messageVo.setOrderNo("123456789");
+            messageVo.setUserId("2088112248749895");
+            messageVo.setPrice("0.01");
+            //1、使用JSONObject
+            String jsonStr = JSONObject.toJSON(messageVo).toString();
+            System.out.println("=====================>>>"+jsonStr);
+            webSocketServer.sendtoUser(jsonStr , "2");
+        }catch (Exception e){
+            return R.error(e.getMessage());
+        }
+        return R.ok();
+    }
 }
