@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <#include "/header.html">
+</head>
+<body>
+<h1>拉起口令支付宝中...</h1>
+</body>
+<script>
+    function getQueryString(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        var r = window.location.search.substr(1).match(reg);
+        if (r != null) return unescape(r[2]);
+        return null;
+    }
+    function  alertParam() {
+        alert(getQueryString("")+","+getQueryString()+","+getQueryString()+","+getQueryString()+","+getQueryString()+",");
+    }
+</script>
+</html>

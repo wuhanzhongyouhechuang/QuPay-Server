@@ -98,17 +98,20 @@ public class WebSocketServer {
      * @param sendUserId
      * @throws IOException
      */
-    public void sendtoUser(String message,String sendUserId) throws IOException {
+    public String sendtoUser(String message,String sendUserId) throws IOException {
         if (webSocketSet.get(sendUserId) != null) {
             if(!id.equals(sendUserId)){
                 log.info("用户" + id + "发来消息：" + " <br/> " + message);
                 webSocketSet.get(sendUserId).sendMessage(message);
+                return "success";
             } else{
                 webSocketSet.get(sendUserId).sendMessage(message);
+                return "success";
             }
         } else {
-            //如果用户不在线则返回不在线信息给自己
-            sendtoUser("当前用户不在线",id);
+            //如果用户不在线则返回不在线不返回
+            //sendtoUser("当前用户不在线",id);
+            return "noUser";
         }
     }
 

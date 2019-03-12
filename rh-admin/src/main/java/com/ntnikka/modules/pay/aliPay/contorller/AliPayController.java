@@ -1257,4 +1257,38 @@ public class AliPayController extends AbstractController {
         }
         return R.ok();
     }
+
+
+    @RequestMapping("AliKouLingTrade")
+    public void AliKouLingTrade(HttpServletRequest request ,HttpServletResponse response) throws Exception{
+        System.out.println("============>>>: enter AliKouLingTrade");
+        Map<String, String> params = AliUtils.convertRequestParamsToMap(request); // 将异步通知中收到的待验证所有参数都存放到map中
+        for (String key : params.keySet()) {
+            System.out.println("Key = " + key);
+            System.out.println("Value = " + params.get(key));
+        }
+        String sysNo = params.get("sysNo");
+        AliOrderEntity aliOrderEntity = aliOrderService.queryBySysTradeNo(sysNo);
+        if (null == aliOrderEntity){
+            response.sendRedirect("http://admin.qupay666.net:8080/pay-admin/404.html");
+        }
+        String authCode = params.get("auth_code");
+        String appId = params.get("app_id");
+
+        String resultStr = AliPayRequest.getAliUserId(appId ,AlipayConfig.private_key , AlipayConfig.alipay_public_key,authCode);
+        JSONObject resultJson = JSON.parseObject(resultStr).getJSONObject("alipay_system_oauth_token_response");
+        if (!EmptyUtil.isEmpty(resultJson.getInteger("code"))) {//无code表示正常返回
+            aliOrderService.updateTradeStatusClosed(aliOrderEntity.getSysTradeNo());
+            response.sendRedirect("http://admin.qupay666.net:8080/pay-admin/404.html");
+        }
+        String userId = resultJson.getString("user_id");
+        MessageVo messageVo = new MessageVo();
+        messageVo.setOrderNo(sysNo);
+        messageVo.setUserId(userId);
+        messageVo.setPrice(aliOrderEntity.getOrderAmount().toString());
+        //轮询一条通道发送
+        webSocketServer.sendtoUser(JSONObject.toJSON(messageVo).toString(),"2");
+        response.sendRedirect("http://zy5w5s.natappfree.cc/pay-admin/modules/aliPayTest/authHtml.html");
+    }
+
 }
