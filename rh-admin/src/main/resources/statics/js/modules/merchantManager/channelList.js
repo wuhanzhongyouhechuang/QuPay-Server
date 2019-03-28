@@ -6,6 +6,7 @@ $(function () {
         colModel: [
             {label: 'ID', name: 'id', index: "id", width: 45, key: true},
             {label: '通道地址', name: 'url', sortable: false, width: 75},
+            {label: 'websocketId', name: 'websocketId', sortable: false, width: 75},
             {label: '支付宝userId', name: 'aliUserId', sortable: false, width: 75},
             {label: '支付宝账号', name: 'aliAccount', sortable: false, width: 75},
             // {label: '权重', name: 'weight', sortable: false, width: 75},//权重字段预留deviceCode
@@ -97,7 +98,8 @@ var vm = new Vue({
             bankCardNum : null,
             bankCode : null,
             bankAccount : null,
-            aliAccount : null
+            aliAccount : null,
+            websocketId : null
         }],
         showList: true,
         showList2: false,

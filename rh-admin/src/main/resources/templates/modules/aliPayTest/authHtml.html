@@ -1,22 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns="http://www.w3.org/1999/html">
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
     <#include "/header.html">
 </head>
 <body>
-<h1>拉起口令支付宝中...</h1>
+<h1 style="text-align: center;margin-top: 200px;">拉起支付宝中...</br>请勿退出</h1>
 </body>
 <script>
+    var intervalId ;
     function getQueryString(name) {
         var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
         var r = window.location.search.substr(1).match(reg);
         if (r != null) return unescape(r[2]);
         return null;
     }
-    function  alertParam() {
-        alert(getQueryString("")+","+getQueryString()+","+getQueryString()+","+getQueryString()+","+getQueryString()+",");
+    function getTradeNo(targetUrl ,name){
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        var r = targetUrl.match(reg);
+        if (r != null) return unescape(r[2]);
+        return null;
+    }
+    $(function() {
+        getAliUrl();
+        intervalId = window.setInterval("getAliUrl();",10000);
+    })
+    function doALiPay(tradeNo) {
+        AlipayJSBridge.call("tradePay", {
+            tradeNO: tradeNo,
+            bizType: "biz_account_transfer",
+            bizContext: "{\"business_scene\":\"qrpay\"}",
+        }, function (result) {
+        });
+    }
+    function getAliUrl() {
+        var sysNo = getQueryString("sysNo");
+        var dataParam = {
+            "sysNo": sysNo
+        };
+        $.ajax({
+            type: "POST",
+            url: baseURL + "/api/v1/pollingUrl",
+            async: true,
+            data: JSON.stringify(dataParam),
+            dataType: 'json', //返回值类型一般设置为json
+            contentType: 'application/json;charset=utf-8',
+            success: function(data, textStatus) {
+                //
+                if(data.code == 0){
+                    window.clearInterval(intervalId);
+                   var url = data.url;
+                   var tradeNo = getTradeNo(url,"tradeNO");
+                   doALiPay(tradeNo);
+                }
+            }
+        });
     }
 </script>
+<script src="https://gw.alipayobjects.com/as/g/h5-lib/alipayjsapi/3.1.1/alipayjsapi.min.js"></script>
 </html>

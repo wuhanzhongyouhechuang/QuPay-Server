@@ -1,7 +1,10 @@
 package com.ntnikka.common.utils;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.websocket.*;
@@ -29,6 +32,22 @@ public class WebSocketServer {
     private Session session;
     private static Logger log = LogManager.getLogger(WebSocketServer.class);
     private String id = "";
+
+    @Autowired
+    private  RedisUtil redisUtil = (RedisUtil) SpringUtil.getBean("RedisUtil");
+
+//    static {
+//        // key采用String的序列化方式
+//        RedisSerializer stringRedisSerializer = new StringRedisSerializer();
+//        redisTemplate.setKeySerializer(stringRedisSerializer);
+//        // hash的key也采用String的序列化方式
+//        redisTemplate.setHashKeySerializer(stringRedisSerializer);
+//        // value序列化方式采用jackson
+//        redisTemplate.setValueSerializer(stringRedisSerializer);
+//        // hash的value序列化方式采用jackson
+//        redisTemplate.setHashValueSerializer(stringRedisSerializer);
+//        redisTemplate.afterPropertiesSet();
+//    }
     /**
      * 连接建立成功调用的方法*/
     @OnOpen
@@ -50,6 +69,7 @@ public class WebSocketServer {
      */
     @OnClose
     public void onClose() {
+        log.info("连接"+this.id+ "关闭！");
         webSocketSet.remove(this);  //从set中删除
         subOnlineCount();           //在线数减1
         log.info("有一连接关闭！当前在线人数为" + getOnlineCount());
@@ -62,18 +82,8 @@ public class WebSocketServer {
     @OnMessage
     public void onMessage(String message, Session session) {
         log.info("来自客户端的消息:" + message);
-        //可以自己约定字符串内容，比如 内容|0 表示信息群发，内容|X 表示信息发给id为X的用户
-        String sendMessage = message.split("[|]")[0];
-        String sendUserId = message.split("[|]")[1];
-        try {
-            if(sendUserId.equals("0"))
-                sendtoAll(sendMessage);
-            else
-                sendtoUser(sendMessage,sendUserId);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        JSONObject resultJson = JSON.parseObject(message);
+        redisUtil.set(resultJson.getString("orderNo"),resultJson.getString("url"));
     }
 
     /**
@@ -83,8 +93,7 @@ public class WebSocketServer {
      */
     @OnError
     public void onError(Session session, Throwable error) {
-        log.error("发生错误");
-        error.printStackTrace();
+        log.info("发生错误 " + error.getMessage());
     }
 
 
@@ -100,14 +109,9 @@ public class WebSocketServer {
      */
     public String sendtoUser(String message,String sendUserId) throws IOException {
         if (webSocketSet.get(sendUserId) != null) {
-            if(!id.equals(sendUserId)){
-                log.info("用户" + id + "发来消息：" + " <br/> " + message);
-                webSocketSet.get(sendUserId).sendMessage(message);
-                return "success";
-            } else{
-                webSocketSet.get(sendUserId).sendMessage(message);
-                return "success";
-            }
+            log.info("用户" + id + "发来消息：" + " <br/> " + message);
+            webSocketSet.get(sendUserId).sendMessage(message);
+            return "success";
         } else {
             //如果用户不在线则返回不在线不返回
             //sendtoUser("当前用户不在线",id);

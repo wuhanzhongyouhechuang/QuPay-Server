@@ -54,6 +54,7 @@
                 <option value="221">支付宝免签</option>
                 <option value="222">支付宝转账银行卡</option>
                 <option value="223">支付宝红包</option>
+                <option value="224">支付宝口令</option>
                 <option value="32">微信</option>
                 <option value="321">微信免签</option>
                 <option value="421">QQ免签</option>
@@ -144,7 +145,8 @@
             "notifyUrl": "http://152.32.161.99/api/v1/notify"
         };
         $.ajax({
-            url: baseURL + "/api/v1/create",
+            url:  'http://www.qupay666.net/api/v1/create',
+            // url:  baseURL + '/api/v1/create',
             type: 'post',
             data: JSON.stringify(dataParam),//一同上传的数据
             dataType: 'json', //返回值类型一般设置为json
@@ -156,7 +158,7 @@
                     if (payType == "QrCode") {
                         $("#qrCode").attr('src', data.data.qr_code);
                     } else {
-                        if(payMethod == "521" || payMethod == "222"){
+                        if(payMethod == "521" || payMethod == "222" || payMethod == "224"){
                             $("#qrCode").attr('src', data.data.qr_code);
                         }else {
                             window.location.href = data.data.qr_code;

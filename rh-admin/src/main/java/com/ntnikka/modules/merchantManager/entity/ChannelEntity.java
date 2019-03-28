@@ -63,6 +63,19 @@ public class ChannelEntity implements Serializable {
      */
     private String aliAccount;
 
+    /**
+     * 客户端websocketId
+     */
+    private String websocketId;
+
+    public String getWebsocketId() {
+        return websocketId;
+    }
+
+    public void setWebsocketId(String websocketId) {
+        this.websocketId = websocketId;
+    }
+
     public String getAliAccount() {
         return aliAccount;
     }
