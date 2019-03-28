@@ -5,14 +5,8 @@ import com.alibaba.fastjson.JSONObject;
 import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
 import com.alipay.api.DefaultAlipayClient;
-import com.alipay.api.request.AlipayOpenAuthTokenAppRequest;
-import com.alipay.api.request.AlipayTradeOrderSettleRequest;
-import com.alipay.api.request.AlipayTradePrecreateRequest;
-import com.alipay.api.request.AlipayTradeQueryRequest;
-import com.alipay.api.response.AlipayOpenAuthTokenAppResponse;
-import com.alipay.api.response.AlipayTradeOrderSettleResponse;
-import com.alipay.api.response.AlipayTradePrecreateResponse;
-import com.alipay.api.response.AlipayTradeQueryResponse;
+import com.alipay.api.request.*;
+import com.alipay.api.response.*;
 import com.ntnikka.modules.pay.aliPay.config.AlipayConfig;
 import com.ntnikka.modules.pay.aliPay.utils.BalanceUtil;
 import org.apache.commons.lang.StringUtils;
@@ -29,7 +23,7 @@ public class AliPayRequest {
     public static String  doQrCodeAliRequest(String orderId , BigDecimal orderAmount , String productName , String appId , String privateKey , String aliPubKey , String authToken , String pid , String storeId)throws AlipayApiException{
         AlipayClient alipayClient = new DefaultAlipayClient("https://openapi.alipay.com/gateway.do", appId, privateKey, "json", AlipayConfig.input_charset, aliPubKey, AlipayConfig.sign_type_RSA2); //获得初始化的AlipayClient
         AlipayTradePrecreateRequest request = new AlipayTradePrecreateRequest();//创建API对应的request类
-        request.setNotifyUrl("http://152.32.161.135/api/v1/AliNotify");
+        request.setNotifyUrl("http://152.32.161.99/api/v1/AliNotify");
         if (StringUtils.isEmpty(storeId)){//没有商户id
             request.setBizContent("{" +
                     "    \"out_trade_no\":\""+orderId+"\"," +
@@ -107,5 +101,15 @@ public class AliPayRequest {
         String jsonStr = "{\"alipay_trade_precreate_response\":{\"code\":\"10000\",\"msg\":\"Success\",\"out_trade_no\":\"2015032001010100211\",\"qr_code\":\"https:\\/\\/qr.alipay.com\\/bax043173wzfnxohhdho6090\"},\"sign\":\"OUt2HdOZllr6w9txa45KSXy1fGnEhUPKOv7149nasPZdjojseYWDDQjc6pNLy2nJn9Uh4lahbGoPORtwRo26MlUWlMv+jcHGWmKbIvo2LNEYBaRSsi+nBPs3W7VF/D5MTC4pfwEuTK+dZBYuPCSuonWX4baLOVrBeFq4/k+t1UsheQom3n9ps0Xgxc17YQ8DQcMgzt+6W5zJgHqp8CkFPpKZjxf+P1UrbWgqHhNKhMg6gEscXk14dY6B90eta95PKUCWhlmUn6yn/KU4QqJF1BLkVHKHx/cq6kpIuckMeojsav0uQQT/vUfQcsaxX+8mhDR+OEPCLn9ocTpmzJeiCw==\"}";
         JSONObject json = JSON.parseObject(jsonStr).getJSONObject("alipay_trade_precreate_response");
         System.out.println(json);
+    }
+
+    public static String getAliUserId(String appID , String priKey , String pubKey , String authCode) throws AlipayApiException{
+        AlipayClient alipayClient = new DefaultAlipayClient("https://openapi.alipay.com/gateway.do", appID, priKey, "json", AlipayConfig.input_charset, pubKey, AlipayConfig.sign_type_RSA2);
+        AlipaySystemOauthTokenRequest request = new AlipaySystemOauthTokenRequest();
+        request.setCode(authCode);
+        request.setGrantType("authorization_code");
+        AlipaySystemOauthTokenResponse oauthTokenResponse = alipayClient.execute(request);
+        logger.info("auth_token : {}", oauthTokenResponse.getBody());
+        return oauthTokenResponse.getBody();
     }
 }

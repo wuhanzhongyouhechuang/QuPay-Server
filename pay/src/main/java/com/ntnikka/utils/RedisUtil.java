@@ -3,6 +3,7 @@ package com.ntnikka.utils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
@@ -16,7 +17,7 @@ import java.util.concurrent.TimeUnit;
  * @Description Redis工具类
  * @Date 2019/1/25 10:30
  **/
-@Component
+@Repository("RedisUtil")
 public class RedisUtil {
 
     @Autowired

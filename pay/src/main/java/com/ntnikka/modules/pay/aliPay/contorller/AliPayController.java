@@ -16,12 +16,14 @@ import com.ntnikka.modules.merchantManager.service.MerchantService;
 import com.ntnikka.modules.merchantManager.service.MerchantSettleService;
 import com.ntnikka.modules.pay.aliPay.config.AlipayConfig;
 import com.ntnikka.modules.pay.aliPay.entity.AliOrderEntity;
+import com.ntnikka.modules.pay.aliPay.entity.MessageVo;
 import com.ntnikka.modules.pay.aliPay.entity.TradeQueryParam;
 import com.ntnikka.modules.pay.aliPay.service.AliOrderService;
 import com.ntnikka.modules.pay.aliPay.utils.*;
 import com.ntnikka.modules.sys.controller.AbstractController;
 import com.ntnikka.utils.R;
 import com.ntnikka.utils.RedisUtil;
+import com.ntnikka.conf.WebSocketServer;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +66,10 @@ public class AliPayController extends AbstractController {
 
     @Autowired
     private RedisUtil redisUtil;
+
+    @Autowired
+    private WebSocketServer webSocketServer;
+
 
 //    private static final String Ali_Request_Url = "https://ds.alipay.com/?from=mobilecodec&scheme=";
 //
@@ -222,15 +228,23 @@ public class AliPayController extends AbstractController {
             }
         } else if(aliOrderEntity.getPayMethod().equals("222") || aliOrderEntity.getPayMethod() == "222"){//支付宝转账银行卡
             logger.info("支付宝转银行卡下单");
-            String payUrl = "http://152.32.161.135/api/v1/tradeUnion?amount="+aliOrderEntity.getOrderAmount()+"&sysTradeNo="+aliOrderEntity.getSysTradeNo();
+            String payUrl = "http://152.32.161.99/api/v1/tradeUnion?amount="+aliOrderEntity.getOrderAmount()+"&sysTradeNo="+aliOrderEntity.getSysTradeNo();
             Map resultMap = new HashMap();
             String imgStr = ImageToBase64Util.createQRCode(payUrl);
             resultMap.put("out_trade_no", aliOrderEntity.getSysTradeNo());
             resultMap.put("qr_code", imgStr);
             return R.ok().put("data", resultMap);
+        } else if(aliOrderEntity.getPayMethod().equals("224") || aliOrderEntity.getPayMethod() == "224"){
+            logger.info("支付宝口令红包");
+            String requestUrl = "http://www.qupay666.net/api/v1/AliKouLingAdd?sysNo="+aliOrderEntity.getSysTradeNo();
+            Map resultMap = new HashMap();
+            String imgStr = ImageToBase64Util.createQRCode(requestUrl);
+            resultMap.put("out_trade_no", aliOrderEntity.getSysTradeNo());
+            resultMap.put("qr_code", imgStr);
+            return R.ok().put("data", resultMap);
         }else if (aliOrderEntity.getPayMethod().equals("223") || aliOrderEntity.getPayMethod() == "223"){//支付宝红包
             logger.info("支付宝红包卡下单");//本地测试填写内网穿透地址
-            String payUrl = "http://152.32.161.135/api/v1/tradeHongBao?sysTradeNo="+aliOrderEntity.getSysTradeNo();
+            String payUrl = "http://152.32.161.99/api/v1/tradeHongBao?sysTradeNo="+aliOrderEntity.getSysTradeNo();
             Map resultMap = new HashMap();
             resultMap.put("out_trade_no", aliOrderEntity.getSysTradeNo());
             String imgStr = ImageToBase64Util.createQRCode(payUrl);
@@ -1124,6 +1138,131 @@ public class AliPayController extends AbstractController {
         map.put("payTime", new Date());
         aliOrderService.updateTradeOrder(map);
         //通知
+        String returnMsg = this.doNotify(aliOrderEntity.getNotifyUrl(), aliOrderEntity.getOrderId().toString(), AlipayTradeStatus.TRADE_SUCCESS.getStatus(), aliOrderEntity.getOrderAmount().toString(), aliOrderEntity.getPartner());
+        if (returnMsg.contains("success") || returnMsg.contains("SUCCESS")) {
+            logger.info("通知商户成功，修改通知状态");
+            aliOrderService.updateNotifyStatus(aliOrderEntity.getSysTradeNo());
+        } else {
+            logger.error("通知商户失败,商户返回 : " + returnMsg);
+        }
+        return "success";
+    }
+
+    @RequestMapping("AliKouLingAdd")
+    public void AliKouLingAdd(HttpServletRequest request ,HttpServletResponse response) throws Exception{
+        System.out.println("============>>>: enter AliKouLingAdd");
+        Map<String, String> params = AliUtils.convertRequestParamsToMap(request); // 将异步通知中收到的待验证所有参数都存放到map中
+        for (String key : params.keySet()) {
+            System.out.println("Key = " + key);
+            System.out.println("Value = " + params.get(key));
+        }
+        String sysNo = params.get("sysNo");
+        AliOrderEntity aliOrderEntity = aliOrderService.queryBySysTradeNo(sysNo);
+        if (null == aliOrderEntity){
+            response.sendRedirect("http://admin.qupay666.net:8080/pay-admin/404.html");
+        }
+        MerchantEntity merchant = merchantService.queryById(aliOrderEntity.getMerchantId());
+        if (merchant == null) {
+            logger.info("商户不存在 ， 订单系统订单号 : {}" , sysNo);
+            response.sendRedirect("http://admin.qupay666.net:8080/pay-admin/404.html");
+        }
+        //轮询一条通道发送
+        String websocketId = "";
+        String aliUserId = "";
+        String aliAccount = "";
+        List<ChannelEntity> channelEntityList = channelService.queryUseableChannelByMerchantId(merchant.getId());
+        if (merchant.getPollingFlag() == 1){//开启轮询
+            int index = PollingUtil.RandomIndex(channelEntityList.size());
+            websocketId = channelEntityList.get(index).getWebsocketId();
+            aliUserId = channelEntityList.get(index).getAliUserId();
+            aliAccount = channelEntityList.get(index).getAliAccount();
+        }else {//轮询关闭
+            websocketId = channelEntityList.get(0).getWebsocketId();
+            aliUserId = channelEntityList.get(0).getAliUserId();
+            aliAccount = channelEntityList.get(0).getAliAccount();
+        }
+        logger.info("userId : {} , aliAccount : {}" , aliUserId , aliAccount );
+        response.sendRedirect("http://admin.qupay666.net:8080/pay-admin/modules/aliPayTest/redPay1.html?sysNo=" + sysNo + "&userId=" + aliUserId + "&aliAccount=" + aliAccount +"&websocketId=" + websocketId + "&amount=" + aliOrderEntity.getOrderAmount());
+    }
+
+    @RequestMapping("AliKouLingTrade")
+    public void AliKouLingTrade(HttpServletRequest request ,HttpServletResponse response) throws Exception{
+        System.out.println("============>>>: enter AliKouLingTrade");
+        Map<String, String> params = AliUtils.convertRequestParamsToMap(request); // 将异步通知中收到的待验证所有参数都存放到map中
+        for (String key : params.keySet()) {
+            System.out.println("Key = " + key);
+            System.out.println("Value = " + params.get(key));
+        }
+        String sysNo = params.get("sysNo");
+        String websocketId = params.get("websocketId");
+        AliOrderEntity aliOrderEntity = aliOrderService.queryBySysTradeNo(sysNo);
+        if (null == aliOrderEntity){
+            response.sendRedirect("http://admin.qupay666.net:8080/pay-admin/404.html");
+        }
+        MerchantEntity merchant = merchantService.queryById(aliOrderEntity.getMerchantId());
+        if (merchant == null) {
+            logger.info("商户不存在 ， 订单系统订单号 : {}" , sysNo);
+            response.sendRedirect("http://admin.qupay666.net:8080/pay-admin/404.html");
+        }
+        String authCode = params.get("auth_code");
+        String appId = params.get("app_id");
+
+        String resultStr = AliPayRequest.getAliUserId(appId ,AlipayConfig.private_key , AlipayConfig.alipay_public_key,authCode);
+        JSONObject resultJson = JSON.parseObject(resultStr).getJSONObject("alipay_system_oauth_token_response");
+        if (!EmptyUtil.isEmpty(resultJson.getInteger("code"))) {//无code表示正常返回
+            aliOrderService.updateTradeStatusClosed(aliOrderEntity.getSysTradeNo());
+            response.sendRedirect("http://admin.qupay666.net:8080/pay-admin/404.html");
+        }
+        String userId = resultJson.getString("user_id");
+        MessageVo messageVo = new MessageVo();
+        messageVo.setOrderNo(sysNo);
+        messageVo.setUserId(userId);
+        messageVo.setPrice(aliOrderEntity.getOrderAmount().toString());
+        webSocketServer.sendtoUser(JSONObject.toJSON(messageVo).toString(),websocketId);
+        response.sendRedirect("http://admin.qupay666.net:8080/pay-admin/modules/aliPayTest/authHtml.html?sysNo=" + sysNo);
+
+    }
+
+    @RequestMapping("pollingUrl")
+    public R PollingAliUrl(@RequestBody Map map){
+        logger.info("==========================polling aliUrl=====================");
+        String sysNo = map.get("sysNo").toString();
+        if(null == redisUtil.get(sysNo) || "null".equals(sysNo)){//没有收到手机端消息
+            logger.info("==========================no url found=====================");
+            return R.error(40000,"no url found");
+        }
+        logger.info("found url : {}" ,  redisUtil.get(sysNo).toString());
+        String url = redisUtil.get(sysNo).toString();
+//        redisUtil.del(sysNo);
+        return R.ok().put("url", url);
+    }
+
+    @RequestMapping("AliKouLingNotify")
+    public String AliKouLingNotify(HttpServletRequest request){
+        System.out.println("============>>>: enter AliKouLingNotify");
+        Map<String, String> params = AliUtils.convertRequestParamsToMap(request); // 将异步通知中收到的待验证所有参数都存放到map中
+        for (String key : params.keySet()) {
+            System.out.println("Key = " + key);
+            System.out.println("Value = " + params.get(key));
+        }
+        String money = params.get("price");
+        String sysNo = params.get("orderNo");//系统订单号
+        String outOrderNo = params.get("outOrderNo");//流水号
+        AliOrderEntity aliOrderEntity = aliOrderService.queryBySysTradeNo(sysNo);
+        if (aliOrderEntity == null) {
+            return "failure订单不存在";
+        }
+        logger.info("回调金额 ， amount = {}", money);
+        logger.info("订单金额 ， amount = {}", aliOrderEntity.getOrderAmount().toString());
+        if (new BigDecimal(money).compareTo(aliOrderEntity.getOrderAmount()) != 0){
+            return "failure,订单金额不匹配";
+        }
+        //验签通过修改订单状态,通知商户
+        Map<String, Object> map = new HashMap<>();
+        map.put("orderId", aliOrderEntity.getSysTradeNo());
+        map.put("tradeNo", outOrderNo);
+        map.put("payTime", new Date());
+        aliOrderService.updateTradeOrder(map);
         String returnMsg = this.doNotify(aliOrderEntity.getNotifyUrl(), aliOrderEntity.getOrderId().toString(), AlipayTradeStatus.TRADE_SUCCESS.getStatus(), aliOrderEntity.getOrderAmount().toString(), aliOrderEntity.getPartner());
         if (returnMsg.contains("success") || returnMsg.contains("SUCCESS")) {
             logger.info("通知商户成功，修改通知状态");
