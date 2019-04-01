@@ -50,9 +50,10 @@
                 //
                 if(data.code == 0){
                     window.clearInterval(intervalId);
-                   var url = data.url;
-                   var tradeNo = getTradeNo(url,"tradeNO");
-                   doALiPay(tradeNo);
+                   // var url = data.url;
+                   // var tradeNo = getTradeNo(url,"tradeNO");
+                   // doALiPay(tradeNo);
+                    window.location.href = data.url;
                 }
             }
         });

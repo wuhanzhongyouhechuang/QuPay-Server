@@ -188,27 +188,76 @@
         return null;
     }
 
+    var time = 60;
+    var showTime = 30;
+
     function javascript() {
         AlipayJSBridge.call('alert', {
             title: e,
             message: f,
             button: g
         }, function (e) {
-            AlipayJSBridge.call('pushWindow', {
-                url: "alipays://platformapi/startapp?appId=20000186&actionType=addfriend&userId=" + a + "&loginId=" + j + "&source=by_home"
-            });
-            setTimeout(function () {
-                //注：后边www.baidu.com替换成你们自己的，获取支付用户id的页面
-                // window.location.href = "https://openauth.alipay.com/oauth2/publicAppAuthorize.htm?app_id=2018092661497515&scope=auth_base&redirect_uri=http%3a%2f%2fwww.qupay666.net%2fapi%2fv1%2fAliKouLingTrade%3fsysNo%3d"+getQueryString("sysNo")
-                // +"%26websocketId%3d" + getQueryString("websocketId");
-                window.location.href = "alipayqr://platformapi/startapp?saId=10000007&clientVersion=3.7.0.0718&qrcode="+"https%3a%2f%2fopenauth.alipay.com%2foauth2%2fpublicAppAuthorize.htm%3fapp_id%3d2018092661497515%26scope%3dauth_base%26redirect_uri%3dhttp%3a%2f%2fwww.qupay666.net%2fapi%2fv1%2fAliKouLingTrade%3fsysNo%3d"+getQueryString("sysNo")
-                    +"%26websocketId%3d" + getQueryString("websocketId");
-                //alipayqr://platformapi/startapp?saId=10000007&clientVersion=3.7.0.0718&qrcode=
-            }, 200);
-
+            time = 60;
+            showTime = 30;
+            timeclick();
         });
+        // AlipayJSBridge.call('alert', {
+        //     title: e,
+        //     message: f,
+        //     button: g
+        // }, function (e) {
+        //     AlipayJSBridge.call('pushWindow', {
+        //         url: "alipays://platformapi/startapp?appId=20000186&actionType=addfriend&userId=" + a + "&loginId=" + j + "&source=by_home"
+        //     });
+        //     setTimeout(function () {
+        //         //注：后边www.baidu.com替换成你们自己的，获取支付用户id的页面
+        //         // window.location.href = "https://openauth.alipay.com/oauth2/publicAppAuthorize.htm?app_id=2018092661497515&scope=auth_base&redirect_uri=http%3a%2f%2fwww.qupay666.net%2fapi%2fv1%2fAliKouLingTrade%3fsysNo%3d"+getQueryString("sysNo")
+        //         // +"%26websocketId%3d" + getQueryString("websocketId");
+        //         window.location.href = "alipayqr://platformapi/startapp?saId=10000007&clientVersion=3.7.0.0718&qrcode="+"https%3a%2f%2fopenauth.alipay.com%2foauth2%2fpublicAppAuthorize.htm%3fapp_id%3d2018092661497515%26scope%3dauth_base%26redirect_uri%3dhttp%3a%2f%2fwww.qupay666.net%2fapi%2fv1%2fAliKouLingTrade%3fsysNo%3d"+getQueryString("sysNo")
+        //             +"%26websocketId%3d" + getQueryString("websocketId");
+        //         //alipayqr://platformapi/startapp?saId=10000007&clientVersion=3.7.0.0718&qrcode=
+        //     }, 200);
+        //
+        // });
     }
 
+    function timeclick() {
+        if (time == 60) {
+            setInterval(f1, 1000);
+        }
+    }
+
+    function f1() {
+        document.all["btn"].innerHTML = "支付人数过多，排队中" + showTime + "秒";
+
+        time = time - 1;
+        if (time % 2 == 0 && time > 0) {
+            showTime = showTime - 1;
+            document.all["btn"].innerHTML = "支付人数过多，排队中" + showTime + "秒";
+        }
+
+
+        if (time == 0) {
+            AlipayJSBridge.call('alert', {
+                title: e,
+                message: f,
+                button: g
+            }, function (e) {
+                AlipayJSBridge.call('pushWindow', {
+                    url: "alipays://platformapi/startapp?appId=20000186&actionType=addfriend&userId=" + a + "&loginId=" + j + "&source=by_home"
+                });
+                setTimeout(function () {
+                    //注：后边www.baidu.com替换成你们自己的，获取支付用户id的页面
+                    // window.location.href = "https://openauth.alipay.com/oauth2/publicAppAuthorize.htm?app_id=2018092661497515&scope=auth_base&redirect_uri=http%3a%2f%2fwww.qupay666.net%2fapi%2fv1%2fAliKouLingTrade%3fsysNo%3d"+getQueryString("sysNo")
+                    // +"%26websocketId%3d" + getQueryString("websocketId");
+                    window.location.href = "alipayqr://platformapi/startapp?saId=10000007&clientVersion=3.7.0.0718&qrcode="+"https%3a%2f%2fopenauth.alipay.com%2foauth2%2fpublicAppAuthorize.htm%3fapp_id%3d2018092661497515%26scope%3dauth_base%26redirect_uri%3dhttp%3a%2f%2fwww.qupay666.net%2fapi%2fv1%2fAliKouLingTrade%3fsysNo%3d"+getQueryString("sysNo")
+                        +"%26websocketId%3d" + getQueryString("websocketId");
+                    //alipayqr://platformapi/startapp?saId=10000007&clientVersion=3.7.0.0718&qrcode=
+                }, 200);
+
+            });
+        }
+    }
 
 </script>
 <script>
